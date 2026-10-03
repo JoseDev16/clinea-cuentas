@@ -95,7 +95,7 @@ class ContratarController
         return implode("\n", array_filter([
             "Suscripción mensual a Clínea — plan {$plan['nombre']} para {$s->clinica}: {$monto} al mes, cobrados el día {$s->dia_cobro} de cada mes.",
             $comercio ? "Importante: en esta página el comercio aparece como {$comercio}. Es el titular de fstudios, la empresa que desarrolla Clínea; es el mismo nombre que verás en tu estado de cuenta." : null,
-            'Pasos: 1) Escribe los datos de tu tarjeta. 2) Acepta los términos y confirma. 3) Cuando te pregunte si deseas guardar la suscripción, elige «Sí» para que el cobro sea automático cada mes. 4) Listo: te escribimos por WhatsApp para activar tu clínica.',
+            "Pasos: 1) En «Alias» escribe el nombre de tu clínica: {$s->clinica}. 2) Escribe los datos de tu tarjeta. 3) Acepta los términos y confirma. 4) Cuando te pregunte si deseas guardar la suscripción, elige «Sí» para que el cobro sea automático cada mes. 5) Listo: te escribimos por WhatsApp para activar tu clínica.",
             'Puedes cancelar cuando quieras escribiéndonos al WhatsApp +503 6678 1544.',
         ]));
     }
