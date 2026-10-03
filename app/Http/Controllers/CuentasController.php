@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Suscripcion;
+use App\Services\Bienvenidas;
 use App\Services\RevisorSuscripciones;
 use App\Services\Wompi;
 use Illuminate\Http\Request;
@@ -23,13 +24,13 @@ class CuentasController
                 ->where('clinica', 'like', "%{$buscar}%")
                 ->orWhere('nombre_contacto', 'like', "%{$buscar}%")
                 ->orWhere('email', 'like', "%{$buscar}%")))
-            ->orderByRaw("case estado when 'atrasada' then 0 when 'activa' then 1 when 'pendiente' then 2 else 3 end")
+            ->orderByRaw("case estado when 'suscrita' then 0 when 'atrasada' then 1 when 'activa' then 2 when 'pendiente' then 3 else 4 end")
             ->latest()
             ->paginate(30)
             ->withQueryString();
 
         $conteos = Suscripcion::query()->selectRaw('estado, count(*) as n')->groupBy('estado')->pluck('n', 'estado');
-        $porActivar = Suscripcion::query()->whereIn('estado', ['activa', 'atrasada'])->whereNull('instancia_lista_at')->count();
+        $porActivar = Suscripcion::query()->whereIn('estado', ['suscrita', 'activa', 'atrasada'])->whereNull('instancia_lista_at')->count();
         $mensual = Suscripcion::query()->whereIn('estado', ['activa', 'atrasada'])->sum('monto');
 
         return view('cuentas.index', compact('suscripciones', 'conteos', 'estado', 'buscar', 'porActivar', 'mensual'));
@@ -50,6 +51,22 @@ class CuentasController
         return back()->with($error ? 'error' : 'ok', $error
             ? 'No se pudo consultar Wompi: '.$error['detalle']
             : 'Revisado en Wompi'.(count($eventos) ? ': '.collect($eventos)->pluck('tipo')->join(', ') : ', sin cambios.'));
+    }
+
+    /** La carta tal como le llega al cliente, para revisarla. */
+    public function bienvenidaPdf(Suscripcion $suscripcion, Bienvenidas $bienvenidas)
+    {
+        return response($bienvenidas->pdf($suscripcion), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$bienvenidas->nombreArchivo($suscripcion).'"',
+        ]);
+    }
+
+    public function bienvenida(Suscripcion $suscripcion, Bienvenidas $bienvenidas)
+    {
+        return $bienvenidas->enviar($suscripcion, otraVez: true)
+            ? back()->with('ok', 'Bienvenida enviada a '.$suscripcion->email.'.')
+            : back()->with('error', 'No se pudo enviar la bienvenida; revisa el log.');
     }
 
     public function instancia(Suscripcion $suscripcion)

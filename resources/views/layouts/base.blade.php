@@ -33,6 +33,7 @@ input,textarea,select{width:100%;min-height:44px;border:1px solid var(--line);bo
 input:focus,textarea:focus,select:focus{outline:2px solid var(--teal-soft);border-color:var(--teal)}
 .badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
 .b-pendiente{background:#F1EFE8;color:#5F5E5A}
+.b-suscrita{background:#E1F1F2;color:#155E6B}
 .b-activa{background:#EAF6EE;color:#1F6B43}
 .b-atrasada{background:#FDEDE6;color:#9A3412}
 .b-cancelada{background:#EEE;color:#666}

@@ -14,6 +14,7 @@ class Suscripcion extends Model
 
     public const ESTADOS = [
         'pendiente' => 'Pendiente de pago',
+        'suscrita' => 'Suscrita: preparar instancia',
         'activa' => 'Al día',
         'atrasada' => 'Atrasada',
         'cancelada' => 'Cancelada',
@@ -27,6 +28,8 @@ class Suscripcion extends Model
             'ultimo_pago_at' => 'datetime',
             'revisada_at' => 'datetime',
             'instancia_lista_at' => 'datetime',
+            'suscrita_at' => 'datetime',
+            'bienvenida_enviada_at' => 'datetime',
         ];
     }
 
@@ -65,6 +68,12 @@ class Suscripcion extends Model
         }
 
         return $this->primer_pago_at && $cobro->gt($this->primer_pago_at->copy()->startOfDay()) ? $cobro : null;
+    }
+
+    /** Hasta cuándo le prometimos tener lista su instancia (null si no se ha suscrito). */
+    public function instanciaPrometidaPara(): ?Carbon
+    {
+        return $this->suscrita_at?->copy()->addHours(config('clinea.horas_instancia'));
     }
 
     public function enlaceWhatsApp(): string

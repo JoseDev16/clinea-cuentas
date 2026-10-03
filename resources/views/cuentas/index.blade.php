@@ -2,7 +2,7 @@
 @section('titulo', 'Cuentas')
 @push('head')
 <style>
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:18px 0}
 .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit}
 .stat b{display:block;font-size:24px}
 .stat small{color:var(--muted)}
@@ -30,11 +30,11 @@ td a.fila{color:var(--ink);text-decoration:none;font-weight:700}
 <main class="wrap" style="padding-bottom:48px">
   <h1>Suscripciones</h1>
   <p class="muted">Ingreso mensual de las que están pagando: <b>${{ number_format((float) $mensual, 2) }}</b>
-    @if ($porActivar) · <b style="color:var(--bad)">{{ $porActivar }} por activar</b> (pagaron y falta dejar lista su clínica) @endif
+    @if ($porActivar) · <b style="color:var(--bad)">{{ $porActivar }} por activar</b> (se suscribieron o pagaron y falta dejar lista su clínica) @endif
   </p>
 
   <div class="stats">
-    @foreach (['activa' => 'Al día', 'atrasada' => 'Atrasadas', 'pendiente' => 'Pendientes de pago', 'cancelada' => 'Canceladas'] as $k => $t)
+    @foreach (['suscrita' => 'Por preparar', 'activa' => 'Al día', 'atrasada' => 'Atrasadas', 'pendiente' => 'Pendientes de pago', 'cancelada' => 'Canceladas'] as $k => $t)
       <a class="stat {{ $estado === $k ? 'sel' : '' }}" href="{{ route('cuentas.index', $estado === $k ? [] : ['estado' => $k]) }}">
         <b>{{ $conteos[$k] ?? 0 }}</b><small>{{ $t }}</small>
       </a>
@@ -59,7 +59,7 @@ td a.fila{color:var(--ink);text-decoration:none;font-weight:700}
           <td>{{ $s->nombrePlan() }}<br><small class="muted">{{ $s->nombrePais() }} · ${{ number_format((float) $s->monto, 2) }}/mes · día {{ $s->dia_cobro }}</small></td>
           <td>
             <span class="badge b-{{ $s->estado }}">{{ $s->etiquetaEstado() }}</span>
-            @if (in_array($s->estado, ['activa', 'atrasada']) && ! $s->instancia_lista_at)<br><span class="badge b-instancia" style="margin-top:4px">Por activar</span>@endif
+            @if (in_array($s->estado, ['suscrita', 'activa', 'atrasada']) && ! $s->instancia_lista_at)<br><span class="badge b-instancia" style="margin-top:4px">Por activar{{ $s->instanciaPrometidaPara() ? ' · antes de las '.$s->instanciaPrometidaPara()->format('g:i a') : '' }}</span>@endif
           </td>
           <td>{{ $s->pagos_realizados }}@if ($s->ultimo_pago_at)<br><small class="muted">último {{ $s->ultimo_pago_at->format('d/m/Y') }}</small>@endif</td>
           <td>{{ $s->created_at->format('d/m/Y') }}</td>

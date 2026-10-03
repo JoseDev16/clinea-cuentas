@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Mail\Aviso;
+use App\Mail\Bienvenida;
+use App\Models\User;
 use App\Models\Suscripcion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -176,6 +178,8 @@ class ContratarTest extends TestCase
         $this->assertSame('ANA LOPEZ', $s->wompi_nombre_suscriptor);
         $this->assertSame('San Rafael', $s->wompi_alias);
         $this->assertCount(1, $s->pagos);
+        $this->assertNotNull($s->suscrita_at);
+        Mail::assertSent(Bienvenida::class, 1);
 
         // Mes siguiente: Wompi ya lleva 2 pagos.
         Carbon::setTestNow('2026-11-17 12:00');
@@ -186,23 +190,109 @@ class ContratarTest extends TestCase
         $this->assertSame('activa', $s->fresh()->estado);
     }
 
-    public function test_suscrito_sin_pagos_todavia_guarda_los_datos_de_wompi_y_sigue_pendiente(): void
+    public function test_al_suscribirse_sin_pagos_todavia_queda_suscrita_y_le_llega_la_bienvenida(): void
     {
-        // Lo que Wompi responde justo después de suscribirse: estado en texto y 0 pagos.
+        // Lo que Wompi responde justo después de suscribirse (y siempre, en modo
+        // desarrollo): estado en texto y 0 pagos.
         Carbon::setTestNow('2026-10-03 09:30');
         $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 0, 'estado' => 'Activa', 'nombreSuscriptor' => 'JOSE FLORES', 'alias' => 'clinica san jose', 'monto' => 14]]);
         $this->post('/contratar', $this->datos());
 
-        $this->artisan('cuentas:revisar')->assertSuccessful();
+        $this->artisan('cuentas:revisar --recientes')->expectsOutputToContain('suscripcion')->assertSuccessful();
 
         $s = Suscripcion::sole();
-        $this->assertSame('pendiente', $s->estado);
+        $this->assertSame('suscrita', $s->estado);
         $this->assertSame('Activa', $s->wompi_estado);
         $this->assertSame('sus-1', $s->wompi_suscripcion_id);
         $this->assertSame('JOSE FLORES', $s->wompi_nombre_suscriptor);
         $this->assertSame('clinica san jose', $s->wompi_alias);
-        $this->assertNotNull($s->revisada_at);
+        $this->assertEquals(Carbon::parse('2026-10-03 09:30'), $s->suscrita_at);
+        $this->assertEquals(Carbon::parse('2026-10-03 12:30'), $s->instanciaPrometidaPara());
+        $this->assertNotNull($s->bienvenida_enviada_at);
         $this->assertCount(0, $s->pagos);
+
+        Mail::assertSent(Bienvenida::class, fn (Bienvenida $m) => $m->hasTo('ana@correo.com')
+            && $m->hasReplyTo('hello@fstudios.dev')
+            && $m->hasFrom(config('mail.from.address'), 'Clinea'));
+        // Y a fstudios el aviso para preparar la instancia.
+        Mail::assertSent(Aviso::class, fn (Aviso $m) => str_contains($m->asunto, 'se suscribió'));
+
+        // La siguiente revisión no la vuelve a mandar.
+        $this->artisan('cuentas:revisar')->assertSuccessful();
+        Mail::assertSent(Bienvenida::class, 1);
+    }
+
+    public function test_si_falla_el_correo_la_bienvenida_se_reintenta_en_la_siguiente_revision(): void
+    {
+        Carbon::setTestNow('2026-10-03 09:30');
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 0, 'estado' => 'Activa', 'monto' => 14]]);
+        $this->post('/contratar', $this->datos());
+
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('Resend caído'));
+        $this->artisan('cuentas:revisar --recientes --sin-avisos');
+        $s = Suscripcion::sole();
+        $this->assertSame('suscrita', $s->estado);
+        $this->assertNull($s->bienvenida_enviada_at);
+
+        Mail::fake();
+        $this->artisan('cuentas:revisar --sin-avisos');
+        $this->assertNotNull($s->fresh()->bienvenida_enviada_at);
+        Mail::assertSent(Bienvenida::class, 1);
+    }
+
+    public function test_la_revision_de_cada_minuto_solo_mira_las_pendientes_recientes(): void
+    {
+        Carbon::setTestNow('2026-10-01 09:00');
+        $this->fakeWompi([]);
+        $this->post('/contratar', $this->datos());
+
+        // Tres días después ya no se vigila cada minuto (la de cada hora sí la ve).
+        Carbon::setTestNow('2026-10-04 09:00');
+        $this->artisan('cuentas:revisar --recientes --sin-avisos');
+        $this->assertNull(Suscripcion::sole()->revisada_at);
+
+        $this->artisan('cuentas:revisar --sin-avisos');
+        $this->assertNotNull(Suscripcion::sole()->revisada_at);
+    }
+
+    public function test_el_correo_de_bienvenida_lleva_la_marca_la_hora_prometida_y_el_soporte(): void
+    {
+        Carbon::setTestNow('2026-10-03 09:30');
+        $s = Suscripcion::create([
+            'pais' => 'SV', 'plan' => 'whatsapp', 'monto' => 14, 'dia_cobro' => 3,
+            'nombre_contacto' => 'Dra. Ana López', 'clinica' => 'Clínica San Rafael',
+            'email' => 'ana@correo.com', 'whatsapp' => '+503 7000 0000', 'suscrita_at' => now(),
+        ]);
+
+        $html = (new Bienvenida($s))->render();
+
+        $this->assertStringContainsString('¡Hola, Dra. Ana López! Te damos la bienvenida a Clinea.', $html);
+        $this->assertStringContainsString('12:30 p. m.', $html);
+        $this->assertStringContainsString('+503 6678-1544', $html);
+        $this->assertStringContainsString('Expediente + WhatsApp', $html);
+        $this->assertStringNotContainsString('Clínea', $html);
+
+        $adjuntos = (new Bienvenida($s))->attachments();
+        $this->assertCount(1, $adjuntos);
+    }
+
+    public function test_el_panel_muestra_la_carta_en_pdf_y_reenvia_la_bienvenida(): void
+    {
+        $s = Suscripcion::create([
+            'pais' => 'SV', 'plan' => 'expediente', 'monto' => 9, 'dia_cobro' => 3, 'estado' => 'suscrita',
+            'nombre_contacto' => 'Dra. Ana López', 'clinica' => 'Clínica San Rafael',
+            'email' => 'ana@correo.com', 'whatsapp' => '+503 7000 0000', 'suscrita_at' => now(),
+        ]);
+        $admin = User::factory()->create();
+
+        $pdf = $this->actingAs($admin)->get(route('cuentas.bienvenida.pdf', $s))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF', $pdf->getContent());
+
+        $this->actingAs($admin)->post(route('cuentas.bienvenida', $s))->assertSessionHas('ok');
+        Mail::assertSent(Bienvenida::class, 1);
+        $this->assertNotNull($s->fresh()->bienvenida_enviada_at);
     }
 
     public function test_marca_atrasada_si_pasa_el_dia_de_cobro_sin_pago(): void

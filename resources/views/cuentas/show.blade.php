@@ -23,6 +23,8 @@ dd{font-weight:500;overflow-wrap:anywhere}
     <span class="badge b-{{ $s->estado }}">{{ $s->etiquetaEstado() }}</span>
     @if ($s->instancia_lista_at)
       <span class="badge b-activa">Clínica activada {{ $s->instancia_lista_at->format('d/m/Y') }}</span>
+    @elseif ($s->estado === 'suscrita')
+      <span class="badge b-instancia">Se suscribió: entregar su instancia antes de las {{ $s->instanciaPrometidaPara()?->format('g:i a d/m') }}</span>
     @elseif (in_array($s->estado, ['activa', 'atrasada']))
       <span class="badge b-instancia">Pagó: falta activar su clínica</span>
     @endif
@@ -38,6 +40,8 @@ dd{font-weight:500;overflow-wrap:anywhere}
         <dt>Plan</dt><dd>{{ $s->nombrePlan() }} · {{ $s->nombrePais() }}</dd>
         <dt>Monto</dt><dd>${{ number_format((float) $s->monto, 2) }} al mes, el día {{ $s->dia_cobro }}</dd>
         <dt>Solicitud</dt><dd>{{ $s->created_at->format('d/m/Y H:i') }}</dd>
+        <dt>Se suscribió</dt><dd>{{ $s->suscrita_at?->format('d/m/Y H:i') ?? '—' }}</dd>
+        <dt>Bienvenida</dt><dd>@if ($s->bienvenida_enviada_at) Enviada {{ $s->bienvenida_enviada_at->format('d/m/Y H:i') }} @elseif ($s->suscrita_at) <span style="color:var(--bad)">No se ha podido enviar</span> @else Se envía sola al suscribirse @endif</dd>
         <dt>Primer pago</dt><dd>{{ $s->primer_pago_at?->format('d/m/Y') ?? '—' }}</dd>
         <dt>Último pago</dt><dd>{{ $s->ultimo_pago_at?->format('d/m/Y') ?? '—' }}</dd>
         <dt>Enlace Wompi</dt><dd>@if ($s->wompi_url)<a href="{{ $s->wompi_url }}" target="_blank" rel="noopener">{{ $s->wompi_url }}</a>@else — @endif</dd>
@@ -52,6 +56,10 @@ dd{font-weight:500;overflow-wrap:anywhere}
         <form method="POST" action="{{ route('cuentas.revisar', $s) }}">@csrf<button class="btn btn-primary">Revisar pagos en Wompi ahora</button></form>
         <form method="POST" action="{{ route('cuentas.instancia', $s) }}">@csrf
           <button class="btn">{{ $s->instancia_lista_at ? 'Quitar marca de clínica activada' : 'Marcar clínica activada' }}</button>
+        </form>
+        <a class="btn" href="{{ route('cuentas.bienvenida.pdf', $s) }}" target="_blank" rel="noopener">Ver carta de bienvenida (PDF)</a>
+        <form method="POST" action="{{ route('cuentas.bienvenida', $s) }}" onsubmit="return confirm('¿Enviar el correo de bienvenida a {{ addslashes($s->email) }}?')">@csrf
+          <button class="btn">{{ $s->bienvenida_enviada_at ? 'Reenviar bienvenida' : 'Enviar bienvenida ahora' }}</button>
         </form>
         @if ($s->wompi_url)
           <a class="btn" target="_blank" rel="noopener"

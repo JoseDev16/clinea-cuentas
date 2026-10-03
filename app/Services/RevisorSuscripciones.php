@@ -15,12 +15,16 @@ use Throwable;
  */
 class RevisorSuscripciones
 {
-    public function __construct(private Wompi $wompi) {}
+    public function __construct(private Wompi $wompi, private Bienvenidas $bienvenidas) {}
 
     /**
+     * Con $recientes solo mira las que pidieron su enlace hace poco y todavía
+     * no se suscriben: es la revisión de cada minuto, para darle la bienvenida
+     * al cliente casi en cuanto termina en Wompi.
+     *
      * @return array<int, array{tipo: string, suscripcion: Suscripcion, detalle?: string}>
      */
-    public function revisar(?Suscripcion $solo = null): array
+    public function revisar(?Suscripcion $solo = null, bool $recientes = false): array
     {
         $eventos = [];
         $query = Suscripcion::query()
@@ -28,6 +32,10 @@ class RevisorSuscripciones
             ->where('estado', '!=', 'cancelada');
         if ($solo) {
             $query->whereKey($solo->id);
+        }
+        if ($recientes) {
+            $query->where('estado', 'pendiente')
+                ->where('created_at', '>=', now()->subHours(config('clinea.horas_vigilancia')));
         }
 
         foreach ($query->get() as $s) {
@@ -65,6 +73,23 @@ class RevisorSuscripciones
                 $s->wompi_nombre_suscriptor = $w['nombreSuscriptor'] ?? $s->wompi_nombre_suscriptor;
                 $s->wompi_alias = $w['alias'] ?? $s->wompi_alias;
 
+                // Se suscribió: registró su tarjeta y aceptó el cobro mensual.
+                // En modo desarrollo de Wompi (y quizá hasta el día de cobro)
+                // pagosRealizados sigue en 0, así que no se espera al pago.
+                $suscrito = strcasecmp((string) ($w['estado'] ?? ''), 'Activa') === 0
+                    || (int) ($w['pagosRealizados'] ?? 0) > 0;
+                if ($suscrito && ! $s->suscrita_at) {
+                    $s->suscrita_at = now();
+                    if ($s->estado === 'pendiente') {
+                        $s->estado = 'suscrita';
+                    }
+                    $eventos[] = [
+                        'tipo' => 'suscripcion',
+                        'suscripcion' => $s,
+                        'detalle' => 'le prometimos su instancia antes de las '.$s->instanciaPrometidaPara()->locale('es')->isoFormat('h:mm a [del] D/M'),
+                    ];
+                }
+
                 $pagos = (int) ($w['pagosRealizados'] ?? 0);
                 if ($pagos > $s->pagos_realizados) {
                     for ($n = $s->pagos_realizados + 1; $n <= $pagos; $n++) {
@@ -95,6 +120,12 @@ class RevisorSuscripciones
 
             $s->save();
         });
+
+        // Fuera de la transacción: un correo caído no deshace lo que se leyó
+        // de Wompi. Si falla, se reintenta en la siguiente revisión.
+        if ($s->suscrita_at && ! $s->bienvenida_enviada_at && $s->suscrita_at->gt(now()->subDays(7))) {
+            $this->bienvenidas->enviar($s);
+        }
 
         return $eventos;
     }

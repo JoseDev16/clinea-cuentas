@@ -12,6 +12,7 @@ class Avisos
 {
     private const TITULOS = [
         'solicitud' => 'Nueva solicitud — fue a pagar',
+        'suscripcion' => 'Se suscribió — preparar su instancia',
         'primer_pago' => 'Primer pago — hay que activar la clínica',
         'pago' => 'Pago mensual recibido',
         'atraso' => 'No se registró el cobro del mes',
@@ -32,6 +33,7 @@ class Avisos
         }
         $hay = fn ($t) => collect($eventos)->contains('tipo', $t);
         $asunto = match (true) {
+            $hay('suscripcion') => 'Clínea: ¡nuevo cliente se suscribió! Preparar su instancia (ya le llegó la bienvenida)',
             $hay('primer_pago') => 'Clínea: ¡nuevo cliente pagó! Activar clínica',
             $hay('atraso') => 'Clínea: hay suscripciones atrasadas',
             default => 'Clínea: movimientos en suscripciones',

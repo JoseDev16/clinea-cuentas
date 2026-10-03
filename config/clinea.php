@@ -33,6 +33,20 @@ return [
     'dia_cobro_maximo' => 28,
 
     'whatsapp_soporte' => env('CLINEA_WHATSAPP', '50366781544'),
+    'correo_soporte' => env('CLINEA_CORREO_SOPORTE', 'hello@fstudios.dev'),
+
+    // Así se escribe la marca en todo lo que ve el cliente: sin tilde.
+    'marca' => 'Clinea',
+
+    // Horas que le prometemos al cliente, desde que se suscribe en Wompi,
+    // para tener lista su instancia y que un técnico lo contacte.
+    'horas_instancia' => (int) env('CLINEA_HORAS_INSTANCIA', 3),
+
+    // Cuántas horas después de pedir el enlace se sigue consultando Wompi cada
+    // minuto para detectar la suscripción casi al instante.
+    'horas_vigilancia' => (int) env('CLINEA_HORAS_VIGILANCIA', 48),
+
+    'direccion_fstudios' => 'Plaza El Triángulo, Avenida Roosevelt Sur, San Miguel, El Salvador',
 
     // Orígenes desde los que se acepta el formulario de contratar (la landing).
     'origenes' => array_filter(array_map('trim', explode(',', (string) env('CLINEA_ORIGENES', 'https://clinea.app,https://www.clinea.app')))),

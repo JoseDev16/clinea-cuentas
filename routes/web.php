@@ -27,6 +27,8 @@ Route::prefix('cuentas')->group(function () {
         Route::post('/{suscripcion}/revisar', [CuentasController::class, 'revisar'])->name('cuentas.revisar');
         Route::post('/{suscripcion}/instancia', [CuentasController::class, 'instancia'])->name('cuentas.instancia');
         Route::post('/{suscripcion}/notas', [CuentasController::class, 'notas'])->name('cuentas.notas');
+        Route::get('/{suscripcion}/bienvenida.pdf', [CuentasController::class, 'bienvenidaPdf'])->name('cuentas.bienvenida.pdf');
+        Route::post('/{suscripcion}/bienvenida', [CuentasController::class, 'bienvenida'])->name('cuentas.bienvenida');
         Route::post('/{suscripcion}/cancelar', [CuentasController::class, 'cancelar'])->name('cuentas.cancelar');
     });
 });
