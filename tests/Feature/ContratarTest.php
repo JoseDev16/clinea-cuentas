@@ -21,6 +21,8 @@ class ContratarTest extends TestCase
         parent::setUp();
         config(['services.wompi.app_id' => 'app-test', 'services.wompi.api_secret' => 'secret-test']);
         Mail::fake();
+        // Como lo manda el navegador desde la landing.
+        $this->withHeader('Origin', 'https://clinea.app');
     }
 
     private function datos(array $extra = []): array
@@ -319,6 +321,137 @@ class ContratarTest extends TestCase
         $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 2, 'estado' => 'Activa', 'monto' => 14]]);
         $this->artisan('cuentas:revisar');
         $this->assertSame('activa', Suscripcion::sole()->estado);
+    }
+
+    // ===================== Seguridad =====================
+
+    public function test_sin_origin_ni_referer_se_rechaza(): void
+    {
+        $this->fakeWompi();
+        $this->withoutHeader('Origin')->post('/contratar', $this->datos())->assertForbidden();
+        $this->withHeader('Origin', 'https://otro-sitio.com')->post('/contratar', $this->datos())->assertForbidden();
+        $this->assertSame(0, Suscripcion::count());
+        Http::assertNothingSent();
+    }
+
+    public function test_con_referer_de_la_landing_se_acepta(): void
+    {
+        $this->fakeWompi();
+        $this->withoutHeader('Origin')->withHeader('Referer', 'https://clinea.app/#planes')
+            ->post('/contratar', $this->datos())
+            ->assertRedirect('https://lk.wompi.sv/abc');
+    }
+
+    public function test_no_admite_enlaces_en_el_nombre_de_la_clinica(): void
+    {
+        $this->fakeWompi();
+        $this->post('/contratar', $this->datos(['clinica' => 'Paga aquí: www.evil.com']))
+            ->assertStatus(422)
+            ->assertSee('sin enlaces');
+        $this->post('/contratar', $this->datos(['nombre' => 'Visita clinica-falsa.com ya']))->assertStatus(422);
+        $this->assertSame(0, Suscripcion::count());
+        Http::assertNothingSent();
+    }
+
+    public function test_limpia_codigo_y_caracteres_invisibles_antes_de_mandarlo_a_wompi(): void
+    {
+        $this->fakeWompi();
+        $this->post('/contratar', $this->datos([
+            'clinica' => "<script>alert(1)</script> Clínica\u{202E}  San\nRafael",
+            'nombre' => "Dra. Ana {{7*7}} López",
+        ]))->assertRedirect();
+
+        $s = Suscripcion::sole();
+        $this->assertSame('script alert(1) script Clínica San Rafael', $s->clinica);
+        $this->assertSame('Dra. Ana 7 7 López', $s->nombre_contacto);
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.wompi.sv/EnlacePagoRecurrente'
+            && ! str_contains($r['nombre'], '<') && ! str_contains($r['descripcionProducto'], '<'));
+    }
+
+    public function test_si_vuelve_a_contratar_reusa_su_enlace_en_vez_de_crear_otro(): void
+    {
+        $this->fakeWompi();
+        $this->post('/contratar', $this->datos())->assertRedirect('https://lk.wompi.sv/abc');
+        $this->post('/contratar', $this->datos())->assertRedirect('https://lk.wompi.sv/abc');
+
+        $this->assertSame(1, Suscripcion::count());
+        Http::assertSentCount(2); // token + un solo enlace
+    }
+
+    public function test_maximo_tres_solicitudes_por_correo_al_dia(): void
+    {
+        $this->fakeWompi();
+        foreach (range(1, 3) as $i) {
+            Suscripcion::create([
+                'pais' => 'SV', 'plan' => 'expediente', 'monto' => 9, 'dia_cobro' => 3, 'estado' => 'cancelada',
+                'nombre_contacto' => 'Ana', 'clinica' => "Clínica {$i}", 'email' => 'ana@correo.com', 'whatsapp' => '+503 7000 0000',
+            ]);
+        }
+        $this->post('/contratar', $this->datos())->assertStatus(429)->assertSee('varias solicitudes');
+    }
+
+    public function test_limita_las_solicitudes_por_ip(): void
+    {
+        $this->fakeWompi();
+        foreach (range(1, 5) as $i) {
+            $this->post('/contratar', $this->datos(['email' => "ana{$i}@correo.com"]))->assertRedirect();
+        }
+        $this->post('/contratar', $this->datos(['email' => 'ana6@correo.com']))
+            ->assertStatus(429)
+            ->assertSee('demasiadas solicitudes');
+    }
+
+    public function test_nunca_redirige_fuera_de_wompi(): void
+    {
+        Http::fake([
+            'id.wompi.sv/*' => Http::response(['access_token' => 'tok']),
+            'api.wompi.sv/*' => Http::response(['idEnlace' => 'enl-9', 'urlEnlace' => 'https://evil.example/pagar']),
+        ]);
+        $this->post('/contratar', $this->datos())->assertStatus(502);
+    }
+
+    public function test_el_panel_lleva_csp_y_no_se_guarda_en_cache(): void
+    {
+        $admin = User::factory()->create();
+        $r = $this->actingAs($admin)->get('/cuentas')->assertOk();
+
+        $csp = $r->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("script-src 'nonce-", $csp);
+        $this->assertStringContainsString("frame-ancestors 'none'", $csp);
+        $this->assertStringContainsString('no-store', $r->headers->get('Cache-Control'));
+    }
+
+    public function test_el_nombre_de_una_clinica_no_ejecuta_codigo_en_el_panel(): void
+    {
+        $s = Suscripcion::create([
+            'pais' => 'SV', 'plan' => 'expediente', 'monto' => 9, 'dia_cobro' => 3,
+            'nombre_contacto' => 'x', 'clinica' => "x'); alert(1); ('\"><img src=x onerror=alert(1)>",
+            'email' => 'x@correo.com', 'whatsapp' => '+503 7000 0000',
+        ]);
+        $html = $this->actingAs(User::factory()->create())->get(route('cuentas.show', $s))->getContent();
+
+        $this->assertStringNotContainsString('<img src=x', $html);
+        $this->assertStringNotContainsString('onsubmit=', $html);
+    }
+
+    public function test_el_login_se_bloquea_tras_varios_intentos(): void
+    {
+        User::factory()->create(['email' => 'admin@clinea.app']);
+        foreach (range(1, 5) as $i) {
+            $this->post('/cuentas/entrar', ['email' => 'admin@clinea.app', 'password' => 'mala'.$i]);
+        }
+        $this->post('/cuentas/entrar', ['email' => 'admin@clinea.app', 'password' => 'otra'])->assertStatus(429);
+    }
+
+    public function test_el_login_no_deja_cookie_de_recordarme(): void
+    {
+        User::factory()->create(['email' => 'admin@clinea.app', 'password' => 'clave-segura-123']);
+        $r = $this->post('/cuentas/entrar', ['email' => 'admin@clinea.app', 'password' => 'clave-segura-123'])
+            ->assertRedirect(route('cuentas.index'));
+
+        foreach ($r->headers->getCookies() as $c) {
+            $this->assertStringStartsNotWith('remember_web', $c->getName());
+        }
     }
 
     public function test_el_panel_pide_login(): void

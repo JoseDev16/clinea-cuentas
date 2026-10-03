@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // se protege con chequeo de Origin, campo trampa y límite por IP.
         $middleware->validateCsrfTokens(except: ['contratar']);
         $middleware->redirectUsersTo(fn () => route('cuentas.index'));
+        $middleware->web(append: [\App\Http\Middleware\CabecerasSeguridad::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

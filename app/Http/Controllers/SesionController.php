@@ -20,7 +20,8 @@ class SesionController
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($datos, remember: true)) {
+        // Sin «recordarme»: es el panel de pagos, la sesión vence a las 2 horas.
+        if (! Auth::attempt($datos)) {
             throw ValidationException::withMessages(['email' => 'Correo o contraseña incorrectos.']);
         }
         $request->session()->regenerate();

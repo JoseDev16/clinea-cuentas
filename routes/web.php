@@ -11,13 +11,13 @@ Route::get('/', fn () => redirect()->route('cuentas.index'));
 
 Route::get('/contratar', fn () => redirect()->away('https://clinea.app/#planes'));
 Route::post('/contratar', [ContratarController::class, 'store'])
-    ->middleware('throttle:6,1')
+    ->middleware('throttle:contratar')
     ->name('contratar');
 
 Route::prefix('cuentas')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/entrar', [SesionController::class, 'create'])->name('login');
-        Route::post('/entrar', [SesionController::class, 'store'])->middleware('throttle:6,1');
+        Route::post('/entrar', [SesionController::class, 'store'])->middleware('throttle:entrar');
     });
 
     Route::middleware('auth')->group(function () {

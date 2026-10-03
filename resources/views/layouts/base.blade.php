@@ -44,5 +44,10 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--teal-soft);borde
 </head>
 <body>
 @yield('cuerpo')
+<script nonce="{{ Vite::cspNonce() }}">
+document.querySelectorAll('form[data-confirmar]').forEach(function (f) {
+  f.addEventListener('submit', function (e) { if (!confirm(f.dataset.confirmar)) e.preventDefault(); });
+});
+</script>
 </body>
 </html>

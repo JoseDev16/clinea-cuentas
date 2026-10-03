@@ -58,7 +58,7 @@ dd{font-weight:500;overflow-wrap:anywhere}
           <button class="btn">{{ $s->instancia_lista_at ? 'Quitar marca de clínica activada' : 'Marcar clínica activada' }}</button>
         </form>
         <a class="btn" href="{{ route('cuentas.bienvenida.pdf', $s) }}" target="_blank" rel="noopener">Ver carta de bienvenida (PDF)</a>
-        <form method="POST" action="{{ route('cuentas.bienvenida', $s) }}" onsubmit="return confirm('¿Enviar el correo de bienvenida a {{ addslashes($s->email) }}?')">@csrf
+        <form method="POST" action="{{ route('cuentas.bienvenida', $s) }}" data-confirmar="¿Enviar el correo de bienvenida a {{ $s->email }}?">@csrf
           <button class="btn">{{ $s->bienvenida_enviada_at ? 'Reenviar bienvenida' : 'Enviar bienvenida ahora' }}</button>
         </form>
         @if ($s->wompi_url)
@@ -66,7 +66,7 @@ dd{font-weight:500;overflow-wrap:anywhere}
              href="{{ $s->enlaceWhatsApp() }}?text={{ rawurlencode('Hola '.$s->nombre_contacto.', este es tu enlace para suscribirte a Clinea: '.$s->wompi_url) }}">Reenviarle el enlace de pago</a>
         @endif
         @if ($s->estado !== 'cancelada')
-          <form method="POST" action="{{ route('cuentas.cancelar', $s) }}" onsubmit="return confirm('¿Cancelar la suscripción de {{ addslashes($s->clinica) }}? Se desactiva su enlace en Wompi y no se le cobra más.')">@csrf
+          <form method="POST" action="{{ route('cuentas.cancelar', $s) }}" data-confirmar="¿Cancelar la suscripción de {{ $s->clinica }}? Se desactiva su enlace en Wompi y no se le cobra más.">@csrf
             <button class="btn btn-danger">Cancelar suscripción</button>
           </form>
         @endif
