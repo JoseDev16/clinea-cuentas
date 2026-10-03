@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>@yield('titulo', 'Clínea') · Clínea</title>
+<title>@yield('titulo', 'Clinea') · Clinea</title>
 <link rel="icon" href="https://clinea.app/assets/favicon.svg" type="image/svg+xml">
 <style>
 :root{--teal:#1F7A8C;--teal-deep:#155E6B;--teal-soft:#E1F1F2;--paper:#F7F4EE;--amber:#E8A23D;--ink:#23282E;--muted:#5C6670;--line:rgba(35,40,46,.1);--ok:#2E9E62;--bad:#C2410C}

@@ -22,7 +22,7 @@ class Avisos
 
     public function solicitud(Suscripcion $s): void
     {
-        $this->enviar('Clínea: nueva solicitud de '.$s->clinica, [['tipo' => 'solicitud', 'suscripcion' => $s]]);
+        $this->enviar('Clinea: nueva solicitud de '.$s->clinica, [['tipo' => 'solicitud', 'suscripcion' => $s]]);
     }
 
     /** @param array<int, array{tipo: string, suscripcion: Suscripcion, detalle?: string}> $eventos */
@@ -33,10 +33,10 @@ class Avisos
         }
         $hay = fn ($t) => collect($eventos)->contains('tipo', $t);
         $asunto = match (true) {
-            $hay('suscripcion') => 'Clínea: ¡nuevo cliente se suscribió! Preparar su instancia (ya le llegó la bienvenida)',
-            $hay('primer_pago') => 'Clínea: ¡nuevo cliente pagó! Activar clínica',
-            $hay('atraso') => 'Clínea: hay suscripciones atrasadas',
-            default => 'Clínea: movimientos en suscripciones',
+            $hay('suscripcion') => 'Clinea: ¡nuevo cliente se suscribió! Preparar su instancia (ya le llegó la bienvenida)',
+            $hay('primer_pago') => 'Clinea: ¡nuevo cliente pagó! Activar clínica',
+            $hay('atraso') => 'Clinea: hay suscripciones atrasadas',
+            default => 'Clinea: movimientos en suscripciones',
         };
         $this->enviar($asunto, $eventos);
     }

@@ -2,7 +2,7 @@
 @section('titulo', 'Entrar')
 @section('cuerpo')
 <main class="wrap" style="max-width:420px;padding-top:72px">
-  <div class="logo">Clín<span>ea</span> <span class="muted" style="font-weight:600;font-size:15px;margin-left:8px">· cuentas</span></div>
+  <div class="logo">Clin<span>ea</span> <span class="muted" style="font-weight:600;font-size:15px;margin-left:8px">· cuentas</span></div>
   <form class="card" method="POST" action="{{ url('/cuentas/entrar') }}" style="margin-top:20px">
     @csrf
     <label for="email">Correo</label>

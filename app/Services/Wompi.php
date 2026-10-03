@@ -9,7 +9,7 @@ use RuntimeException;
 
 /**
  * Cliente mínimo de la API de Wompi El Salvador (https://api.wompi.sv).
- * Solo lo que usa Clínea: enlaces de pago recurrente y sus suscripciones.
+ * Solo lo que usa Clinea: enlaces de pago recurrente y sus suscripciones.
  */
 class Wompi
 {

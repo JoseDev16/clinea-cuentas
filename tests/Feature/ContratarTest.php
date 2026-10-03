@@ -92,7 +92,7 @@ class ContratarTest extends TestCase
         $this->post('/contratar', $this->datos());
 
         Http::assertSent(fn ($r) => $r->url() === 'https://api.wompi.sv/EnlacePagoRecurrente'
-            && str_contains($r['descripcionProducto'], 'el nombre del representante legal de Clínea')
+            && str_contains($r['descripcionProducto'], 'el nombre del representante legal de Clinea')
             && str_contains($r['descripcionProducto'], 'elige «Sí»')
             && str_contains($r['descripcionProducto'], 'En «Alias» escribe el nombre de tu clínica: Clínica San Rafael')
             && str_contains($r['descripcionProducto'], '$14.00 al mes'));

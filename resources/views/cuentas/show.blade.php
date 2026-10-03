@@ -63,7 +63,7 @@ dd{font-weight:500;overflow-wrap:anywhere}
         </form>
         @if ($s->wompi_url)
           <a class="btn" target="_blank" rel="noopener"
-             href="{{ $s->enlaceWhatsApp() }}?text={{ rawurlencode('Hola '.$s->nombre_contacto.', este es tu enlace para suscribirte a Clínea: '.$s->wompi_url) }}">Reenviarle el enlace de pago</a>
+             href="{{ $s->enlaceWhatsApp() }}?text={{ rawurlencode('Hola '.$s->nombre_contacto.', este es tu enlace para suscribirte a Clinea: '.$s->wompi_url) }}">Reenviarle el enlace de pago</a>
         @endif
         @if ($s->estado !== 'cancelada')
           <form method="POST" action="{{ route('cuentas.cancelar', $s) }}" onsubmit="return confirm('¿Cancelar la suscripción de {{ addslashes($s->clinica) }}? Se desactiva su enlace en Wompi y no se le cobra más.')">@csrf

@@ -63,7 +63,7 @@ class ContratarController
 
         try {
             $enlace = $wompi->crearEnlaceRecurrente(
-                nombre: "Clínea by fstudios · {$s->clinica} · {$plan['nombre']}",
+                nombre: "Clinea by fstudios · {$s->clinica} · {$plan['nombre']}",
                 monto: $plan['monto'],
                 diaDePago: $s->dia_cobro,
                 descripcion: $this->descripcion($s, $plan),
@@ -93,8 +93,8 @@ class ContratarController
         $monto = '$'.number_format($plan['monto'], 2);
 
         return implode("\n", [
-            "Suscripción mensual a Clínea — plan {$plan['nombre']} para {$s->clinica}: {$monto} al mes, cobrados el día {$s->dia_cobro} de cada mes.",
-            'Importante: el comercio aparece con el nombre del representante legal de Clínea; es el mismo nombre que verás en tu estado de cuenta.',
+            "Suscripción mensual a Clinea — plan {$plan['nombre']} para {$s->clinica}: {$monto} al mes, cobrados el día {$s->dia_cobro} de cada mes.",
+            'Importante: el comercio aparece con el nombre del representante legal de Clinea; es el mismo nombre que verás en tu estado de cuenta.',
             "Pasos: 1) En «Alias» escribe el nombre de tu clínica: {$s->clinica}. 2) Escribe los datos de tu tarjeta. 3) Acepta los términos y confirma. 4) Cuando te pregunte si deseas guardar la suscripción, elige «Sí» para que el cobro sea automático cada mes. 5) Listo: te escribimos por WhatsApp para activar tu clínica.",
             'Puedes cancelar cuando quieras escribiéndonos al WhatsApp +503 6678 1544.',
         ]);
