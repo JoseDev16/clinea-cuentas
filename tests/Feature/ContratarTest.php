@@ -121,6 +121,18 @@ class ContratarTest extends TestCase
         $this->assertSame('9.00', Suscripcion::sole()->monto);
     }
 
+    public function test_fuera_de_el_salvador_y_honduras_paga_el_precio_de_el_salvador_aunque_la_pagina_diga_hn(): void
+    {
+        $this->fakeWompi();
+
+        // IP de otro país (o VPN) y la página pidió Honduras: igual paga SV.
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'US'])
+            ->post('/contratar', $this->datos(['pais' => 'HN', 'plan' => 'whatsapp']));
+
+        $this->assertSame('SV', Suscripcion::sole()->pais);
+        $this->assertSame('14.00', Suscripcion::sole()->monto);
+    }
+
     public function test_honduras_usa_su_precio(): void
     {
         $this->fakeWompi();

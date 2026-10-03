@@ -94,7 +94,7 @@ class ContratarController
             ]], 429);
         }
 
-        $pais = $this->pais($request, $datos['pais'] ?? null);
+        $pais = $this->pais($request);
         $plan = config("clinea.planes.{$pais}.{$datos['plan']}");
 
         $s = Suscripcion::create([
@@ -192,19 +192,13 @@ class ContratarController
     }
 
     /**
-     * El país lo decide el servidor (GeoIP de nginx) para que nadie elija el
-     * precio de otro país; si la IP no es SV/HN se usa el que detectó la página.
+     * El país lo decide solo el servidor (GeoIP de nginx): precio de Honduras
+     * si la IP es de Honduras; cualquier otro caso (El Salvador, otro país,
+     * VPN, sin dato) paga el de El Salvador. El país que manda la página se
+     * ignora, para que nadie elija el precio más barato.
      */
-    private function pais(Request $request, ?string $dePagina): string
+    private function pais(Request $request): string
     {
-        $paises = array_keys(config('clinea.paises'));
-        foreach ([$request->server('GEOIP_COUNTRY'), $dePagina] as $p) {
-            $p = strtoupper((string) $p);
-            if (in_array($p, $paises, true)) {
-                return $p;
-            }
-        }
-
-        return 'SV';
+        return strtoupper((string) $request->server('GEOIP_COUNTRY')) === 'HN' ? 'HN' : 'SV';
     }
 }
