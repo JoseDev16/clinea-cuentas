@@ -12,7 +12,7 @@ return [
             'expediente' => ['nombre' => 'Expediente clínico', 'monto' => 9.00],
             'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => 14.00],
         ],
-        // Honduras: Wompi solo cobra en USD y el banco del cliente gana algo en
+        // Honduras y Guatemala: Wompi solo cobra en USD y el banco del cliente gana algo en
         // la conversión, así que se cobra un poco menos ($8 / $13) y la landing
         // anuncia un precio redondo en lempiras (L240 / L370) que lo cubre.
         'HN' => [
@@ -20,11 +20,24 @@ return [
             'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_HN_EXPEDIENTE', 8.00), 'anunciado' => 'L240'],
             'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_HN_WHATSAPP', 13.00), 'anunciado' => 'L370'],
         ],
+        // Guatemala: misma lógica. $8 / $13 ≈ Q61 / Q99 a ~Q7.63 por dólar; se
+        // anuncia Q65 / Q105, que aguanta hasta ~Q8.08 por dólar.
+        'GT' => [
+            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_GT_EXPEDIENTE', 8.00), 'anunciado' => 'Q65'],
+            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_GT_WHATSAPP', 13.00), 'anunciado' => 'Q105'],
+        ],
     ],
 
     'paises' => [
         'SV' => 'El Salvador',
         'HN' => 'Honduras',
+        'GT' => 'Guatemala',
+    ],
+
+    // Moneda local de los países que pagan en dólares con precio anunciado en su moneda.
+    'monedas_locales' => [
+        'HN' => 'lempiras',
+        'GT' => 'quetzales',
     ],
 
     // A quién avisar de contrataciones, pagos y atrasos (separados por coma).

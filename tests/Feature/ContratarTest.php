@@ -292,6 +292,32 @@ class ContratarTest extends TestCase
         $this->assertCount(1, $adjuntos);
     }
 
+    public function test_guatemala_usa_su_precio(): void
+    {
+        $this->fakeWompi();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'GT'])->post('/contratar', $this->datos(['plan' => 'whatsapp']));
+
+        $this->assertSame('GT', Suscripcion::sole()->pais);
+        $this->assertSame('13.00', Suscripcion::sole()->monto);
+        $this->assertSame('Guatemala', Suscripcion::sole()->nombrePais());
+    }
+
+    public function test_la_bienvenida_de_guatemala_habla_de_quetzales(): void
+    {
+        $s = Suscripcion::create([
+            'pais' => 'GT', 'plan' => 'expediente', 'monto' => 8, 'dia_cobro' => 3,
+            'nombre_contacto' => 'Dra. Rosa Pérez', 'clinica' => 'Clínica Antigua',
+            'email' => 'rosa@correo.com', 'whatsapp' => '+502 5000 0000', 'suscrita_at' => now(),
+        ]);
+
+        $html = (new Bienvenida($s))->render();
+        $this->assertStringContainsString('Q65 (se cobra US$8.00)', $html);
+        $this->assertStringContainsString('Nunca pagarás más de Q65 al mes', $html);
+        $this->assertStringContainsString('lo convierte a quetzales', $html);
+        $this->assertStringNotContainsString('lempiras', $html);
+    }
+
     public function test_la_bienvenida_de_honduras_promete_no_pagar_mas_de_lo_anunciado(): void
     {
         $s = Suscripcion::create([
@@ -303,6 +329,7 @@ class ContratarTest extends TestCase
         $html = (new Bienvenida($s))->render();
         $this->assertStringContainsString('L370 (se cobra US$13.00)', $html);
         $this->assertStringContainsString('Nunca pagarás más de L370 al mes', $html);
+        $this->assertStringContainsString('lo convierte a lempiras', $html);
 
         // En El Salvador no aparece.
         $s->update(['pais' => 'SV', 'monto' => 14]);

@@ -193,12 +193,14 @@ class ContratarController
 
     /**
      * El país lo decide solo el servidor (GeoIP de nginx): precio de Honduras
-     * si la IP es de Honduras; cualquier otro caso (El Salvador, otro país,
-     * VPN, sin dato) paga el de El Salvador. El país que manda la página se
-     * ignora, para que nadie elija el precio más barato.
+     * o Guatemala si la IP es de allá; cualquier otro caso (El Salvador, otro
+     * país, VPN, sin dato) paga el de El Salvador. El país que manda la página
+     * se ignora, para que nadie elija el precio más barato.
      */
     private function pais(Request $request): string
     {
-        return strtoupper((string) $request->server('GEOIP_COUNTRY')) === 'HN' ? 'HN' : 'SV';
+        $ip = strtoupper((string) $request->server('GEOIP_COUNTRY'));
+
+        return in_array($ip, ['HN', 'GT'], true) ? $ip : 'SV';
     }
 }

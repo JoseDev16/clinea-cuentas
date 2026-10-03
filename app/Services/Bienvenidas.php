@@ -55,7 +55,7 @@ class Bienvenidas
     {
         $promesa = $s->instanciaPrometidaPara() ?? now()->addHours(config('clinea.horas_instancia'));
         $usd = '$'.number_format((float) $s->monto, 2);
-        // Honduras: precio anunciado en lempiras, cobro en dólares.
+        // Honduras y Guatemala: precio anunciado en su moneda, cobro en dólares.
         $anunciado = config("clinea.planes.{$s->pais}.{$s->plan}.anunciado");
         $whatsapp = (string) config('clinea.whatsapp_soporte');
 
@@ -66,7 +66,7 @@ class Bienvenidas
             'plan' => $s->nombrePlan(),
             'monto' => $anunciado ? "{$anunciado} (se cobra US{$usd})" : $usd,
             'notaMoneda' => $anunciado
-                ? "Nunca pagarás más de {$anunciado} al mes. Se cobra en dólares (US{$usd}) y tu banco lo convierte a lempiras: por la conversión podrías pagar un poco menos, pero nunca más de lo anunciado."
+                ? "Nunca pagarás más de {$anunciado} al mes. Se cobra en dólares (US{$usd}) y tu banco lo convierte a ".config("clinea.monedas_locales.{$s->pais}", 'tu moneda').": por la conversión podrías pagar un poco menos, pero nunca más de lo anunciado."
                 : null,
             'horas' => config('clinea.horas_instancia'),
             'promesaHora' => $promesa->locale('es')->isoFormat('h:mm a'),
