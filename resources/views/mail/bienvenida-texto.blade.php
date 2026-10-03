@@ -11,6 +11,9 @@ TU SUSCRIPCIÓN
 Clínica: {{ $s->clinica }}
 Plan: {{ $plan }}
 Cobro: {{ $monto }} al mes, el día {{ $s->dia_cobro }}
+@if ($notaMoneda)
+{{ $notaMoneda }}
+@endif
 En tu estado de cuenta el cobro aparece a nombre del representante legal de {{ $marca }}. Puedes cancelar cuando quieras escribiéndonos.
 
 ¿Alguna duda? Escríbenos por WhatsApp al {{ $whatsappVisible }} ({{ $whatsappUrl }}) o responde a este correo.

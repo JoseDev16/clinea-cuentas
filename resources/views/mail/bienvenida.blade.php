@@ -91,6 +91,9 @@
               <td style="padding:6px 20px 18px;{{ $f }};font-size:15px;font-weight:700;color:#23282E">{{ $monto }} al mes, el día {{ $s->dia_cobro }}</td>
             </tr>
           </table>
+          @if ($notaMoneda)
+          <p style="margin:12px 2px 0;{{ $f }};font-size:14px;line-height:21px;font-weight:700;color:#155E6B">{{ $notaMoneda }}</p>
+          @endif
           <p style="margin:12px 2px 0;{{ $f }};font-size:13px;line-height:20px;color:#5C6670">En tu estado de cuenta el cobro aparece a nombre del representante legal de {{ $marca }}, que es quien administra los pagos. Puedes cancelar cuando quieras escribiéndonos.</p>
         </td></tr>
 

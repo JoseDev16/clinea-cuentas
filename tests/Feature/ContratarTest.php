@@ -140,7 +140,7 @@ class ContratarTest extends TestCase
         $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/contratar', $this->datos(['plan' => 'expediente']));
 
         $this->assertSame('HN', Suscripcion::sole()->pais);
-        $this->assertSame('9.00', Suscripcion::sole()->monto);
+        $this->assertSame('8.00', Suscripcion::sole()->monto);
     }
 
     public function test_datos_invalidos_muestran_la_pagina_de_error_sin_crear_nada(): void
@@ -290,6 +290,23 @@ class ContratarTest extends TestCase
 
         $adjuntos = (new Bienvenida($s))->attachments();
         $this->assertCount(1, $adjuntos);
+    }
+
+    public function test_la_bienvenida_de_honduras_promete_no_pagar_mas_de_lo_anunciado(): void
+    {
+        $s = Suscripcion::create([
+            'pais' => 'HN', 'plan' => 'whatsapp', 'monto' => 13, 'dia_cobro' => 3,
+            'nombre_contacto' => 'Dr. Luis Paz', 'clinica' => 'Clínica Tegucigalpa',
+            'email' => 'luis@correo.com', 'whatsapp' => '+504 9000 0000', 'suscrita_at' => now(),
+        ]);
+
+        $html = (new Bienvenida($s))->render();
+        $this->assertStringContainsString('L370 (se cobra US$13.00)', $html);
+        $this->assertStringContainsString('Nunca pagarás más de L370 al mes', $html);
+
+        // En El Salvador no aparece.
+        $s->update(['pais' => 'SV', 'monto' => 14]);
+        $this->assertStringNotContainsString('Nunca pagarás', (new Bienvenida($s->fresh()))->render());
     }
 
     public function test_el_panel_muestra_la_carta_en_pdf_y_reenvia_la_bienvenida(): void

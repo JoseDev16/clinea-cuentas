@@ -85,6 +85,7 @@
           <div class="dato">Clínica</div><div class="valor">{{ $s->clinica }}</div>
           <div class="dato">Plan</div><div class="valor">{{ $plan }}</div>
           <div class="dato">Cobro mensual</div><div class="valor">{{ $monto }}, el día {{ $s->dia_cobro }} de cada mes</div>
+          @if ($notaMoneda)<div class="dato" style="color:#155E6B;font-weight:600;margin-top:2px">Nunca pagarás más de lo anunciado: por la conversión de tu banco podrías pagar un poco menos.</div>@endif
         </td>
         <td style="width:4%"></td>
         <td class="caja" style="width:54%">

@@ -12,11 +12,13 @@ return [
             'expediente' => ['nombre' => 'Expediente clínico', 'monto' => 9.00],
             'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => 14.00],
         ],
-        // Honduras paga lo mismo en dólares; la landing le muestra el
-        // equivalente aproximado en lempiras (Wompi solo cobra en USD).
+        // Honduras: Wompi solo cobra en USD y el banco del cliente gana algo en
+        // la conversión, así que se cobra un poco menos ($8 / $13) y la landing
+        // anuncia un precio redondo en lempiras (L240 / L370) que lo cubre.
         'HN' => [
-            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_HN_EXPEDIENTE', 9.00)],
-            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_HN_WHATSAPP', 14.00)],
+            // «anunciado»: el precio en lempiras de la landing; el cliente nunca paga más.
+            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_HN_EXPEDIENTE', 8.00), 'anunciado' => 'L240'],
+            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_HN_WHATSAPP', 13.00), 'anunciado' => 'L370'],
         ],
     ],
 
