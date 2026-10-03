@@ -165,7 +165,7 @@ class ContratarTest extends TestCase
     public function test_revisar_detecta_el_primer_pago_y_los_siguientes(): void
     {
         Carbon::setTestNow('2026-10-17 10:00');
-        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 1, 'estado' => 1, 'nombreSuscriptor' => 'ANA LOPEZ', 'alias' => 'San Rafael', 'monto' => 14]]);
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 1, 'estado' => 'Activa', 'nombreSuscriptor' => 'ANA LOPEZ', 'alias' => 'San Rafael', 'monto' => 14]]);
         $this->post('/contratar', $this->datos());
 
         $this->artisan('cuentas:revisar')->expectsOutputToContain('primer_pago')->assertSuccessful();
@@ -179,17 +179,36 @@ class ContratarTest extends TestCase
 
         // Mes siguiente: Wompi ya lleva 2 pagos.
         Carbon::setTestNow('2026-11-17 12:00');
-        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 2, 'estado' => 1, 'nombreSuscriptor' => 'ANA LOPEZ', 'monto' => 14]]);
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 2, 'estado' => 'Activa', 'nombreSuscriptor' => 'ANA LOPEZ', 'monto' => 14]]);
         $this->artisan('cuentas:revisar')->expectsOutputToContain('pago')->assertSuccessful();
 
         $this->assertSame(2, $s->fresh()->pagos_realizados);
         $this->assertSame('activa', $s->fresh()->estado);
     }
 
+    public function test_suscrito_sin_pagos_todavia_guarda_los_datos_de_wompi_y_sigue_pendiente(): void
+    {
+        // Lo que Wompi responde justo después de suscribirse: estado en texto y 0 pagos.
+        Carbon::setTestNow('2026-10-03 09:30');
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 0, 'estado' => 'Activa', 'nombreSuscriptor' => 'JOSE FLORES', 'alias' => 'clinica san jose', 'monto' => 14]]);
+        $this->post('/contratar', $this->datos());
+
+        $this->artisan('cuentas:revisar')->assertSuccessful();
+
+        $s = Suscripcion::sole();
+        $this->assertSame('pendiente', $s->estado);
+        $this->assertSame('Activa', $s->wompi_estado);
+        $this->assertSame('sus-1', $s->wompi_suscripcion_id);
+        $this->assertSame('JOSE FLORES', $s->wompi_nombre_suscriptor);
+        $this->assertSame('clinica san jose', $s->wompi_alias);
+        $this->assertNotNull($s->revisada_at);
+        $this->assertCount(0, $s->pagos);
+    }
+
     public function test_marca_atrasada_si_pasa_el_dia_de_cobro_sin_pago(): void
     {
         Carbon::setTestNow('2026-10-17 10:00');
-        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 1, 'estado' => 1, 'monto' => 14]]);
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 1, 'estado' => 'Activa', 'monto' => 14]]);
         $this->post('/contratar', $this->datos());
         $this->artisan('cuentas:revisar');
 
@@ -205,7 +224,7 @@ class ContratarTest extends TestCase
 
         // Llega el pago atrasado: vuelve a estar al día.
         Carbon::setTestNow('2026-11-22 10:00');
-        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 2, 'estado' => 1, 'monto' => 14]]);
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 2, 'estado' => 'Activa', 'monto' => 14]]);
         $this->artisan('cuentas:revisar');
         $this->assertSame('activa', Suscripcion::sole()->estado);
     }
