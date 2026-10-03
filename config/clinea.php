@@ -63,6 +63,25 @@ return [
     // minuto para detectar la suscripción casi al instante.
     'horas_vigilancia' => (int) env('CLINEA_HORAS_VIGILANCIA', 48),
 
+    // «Prueba Clinea 24 horas»: la landing pide la demo y aquí se crea el
+    // acceso en la instancia demo (POST {url}/api/accesos-demo con el token).
+    'demo' => [
+        'url' => env('CLINEA_DEMO_URL', 'https://demo.clinea.app'),
+        'token' => env('CLINEA_DEMO_API_TOKEN'),
+        'horas' => 24,
+        // Solicitudes con el mismo correo en 24 h (cada una genera otra contraseña).
+        'maximo_por_correo' => 2,
+    ],
+
+    // Lista del formulario de demo; la landing muestra exactamente estas.
+    'especialidades' => [
+        'Medicina general', 'Medicina familiar', 'Medicina interna', 'Pediatría',
+        'Ginecología y obstetricia', 'Cardiología', 'Dermatología',
+        'Ortopedia y traumatología', 'Neurología', 'Gastroenterología',
+        'Endocrinología', 'Psicología', 'Psiquiatría', 'Nutrición',
+        'Odontología', 'Fisioterapia', 'Otra especialidad',
+    ],
+
     'direccion_fstudios' => 'Plaza El Triángulo, Avenida Roosevelt Sur, San Miguel, El Salvador',
 
     // Orígenes desde los que se acepta el formulario de contratar (la landing).

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\Aviso;
+use App\Models\SolicitudDemo;
 use App\Models\Suscripcion;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -23,6 +24,24 @@ class Avisos
     public function solicitud(Suscripcion $s): void
     {
         $this->enviar('Clinea: nueva solicitud de '.$s->clinica, [['tipo' => 'solicitud', 'suscripcion' => $s]]);
+    }
+
+    /** Un doctor pidió la demo de 24 horas desde la landing: es un lead. */
+    public function demo(SolicitudDemo $d): void
+    {
+        $asunto = $d->estado === 'enviada'
+            ? 'Clinea: nueva demo — '.$d->nombre.' ('.$d->especialidad.')'
+            : 'Clinea: no se pudo entregar una demo — '.$d->nombre;
+
+        $this->mandar($asunto, [[
+            'titulo' => $d->etiquetaEstado().': '.$d->nombre,
+            'lineas' => array_values(array_filter([
+                $d->especialidad.' · '.$d->email.($d->pais ? ' · '.$d->pais : ''),
+                $d->demo_expira_at ? 'Su acceso vence el '.$d->demo_expira_at->format('d/m/Y H:i') : null,
+                $d->detalle,
+            ])),
+            'url' => url('/cuentas/demos'),
+        ]]);
     }
 
     /** @param array<int, array{tipo: string, suscripcion: Suscripcion, detalle?: string}> $eventos */
@@ -57,6 +76,11 @@ class Avisos
             ];
         }, $eventos);
 
+        $this->mandar($asunto, $bloques);
+    }
+
+    private function mandar(string $asunto, array $bloques): void
+    {
         try {
             Mail::to(config('clinea.avisos_a'))->send(new Aviso($asunto, $bloques));
         } catch (Throwable $e) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Suscripcion;
 use App\Services\Avisos;
 use App\Services\Wompi;
+use App\Support\FormularioPublico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -17,19 +18,12 @@ use Throwable;
  */
 class ContratarController
 {
-    // Letras (con tildes), números, espacios y los signos de un nombre o razón social.
-    private const SOLO_NOMBRE = "/^[\\pL\\pM\\pN .,'&()#\\-]+$/u";
-
-    // Dominios: nadie llama a su clínica «algo.com»; así no se cuela un enlace
-    // en el texto que Wompi muestra al pagar ni en el correo de bienvenida.
-    private const PARECE_ENLACE = '/(www\\.|\\.(com|net|org|info|biz|xyz|io|app|dev|co|me|ly|link|site|online|top|shop|click|live|sv|hn|gt|mx|es)\\b)/iu';
-
     public function store(Request $request, Wompi $wompi, Avisos $avisos)
     {
         // Solo se acepta el formulario enviado desde la landing. Los navegadores
         // siempre mandan Origin (o al menos Referer) en un POST; si no viene
         // ninguno, es un script y se rechaza.
-        if (! app()->isLocal() && ! in_array($this->origen($request), config('clinea.origenes'), true)) {
+        if (! FormularioPublico::desdeLaLanding($request)) {
             abort(403);
         }
 
@@ -42,15 +36,15 @@ class ContratarController
         // enlace), en el correo de bienvenida, en la carta PDF y en el panel:
         // se limpia antes de validar y solo se admite texto de un nombre.
         $request->merge([
-            'nombre' => $this->limpiar($request->input('nombre')),
-            'clinica' => $this->limpiar($request->input('clinica')),
-            'email' => mb_strtolower($this->limpiar($request->input('email'))),
-            'whatsapp' => $this->limpiar($request->input('whatsapp')),
+            'nombre' => FormularioPublico::limpiar($request->input('nombre')),
+            'clinica' => FormularioPublico::limpiar($request->input('clinica')),
+            'email' => mb_strtolower(FormularioPublico::limpiar($request->input('email'))),
+            'whatsapp' => FormularioPublico::limpiar($request->input('whatsapp')),
         ]);
 
         // La landing es HTML estático: no puede mostrar errores de vuelta, así
         // que se muestran aquí (la página ya valida lo mismo antes de enviar).
-        $nombreValido = ['required', 'string', 'min:3', 'max:120', 'regex:'.self::SOLO_NOMBRE, 'not_regex:'.self::PARECE_ENLACE];
+        $nombreValido = FormularioPublico::reglasNombre();
         $v = Validator::make($request->all(), [
             'plan' => ['required', Rule::in(['expediente', 'whatsapp'])],
             'pais' => ['nullable', 'string', 'size:2', 'alpha'],
@@ -155,33 +149,6 @@ class ContratarController
         ]);
     }
 
-    /**
-     * Quita caracteres de control e invisibles, signos que solo sirven para
-     * inyectar (< > " ` { } [ ] | \\ ; : @ / = $ % ~ ^ *) y espacios de más.
-     * El correo se valida aparte (su @ y sus puntos se conservan).
-     */
-    private function limpiar(mixed $valor): string
-    {
-        if (! is_string($valor)) {
-            return '';
-        }
-        $valor = preg_replace('/[\\p{C}\\x{2028}\\x{2029}]+/u', ' ', $valor) ?? '';
-        if (! str_contains($valor, '@')) {
-            $valor = preg_replace('/[<>"`{}\\[\\]|\\\\;:\\/=$%~^*]+/u', ' ', $valor) ?? '';
-        }
-
-        return trim(preg_replace('/\\s+/u', ' ', $valor) ?? '');
-    }
-
-    private function origen(Request $request): ?string
-    {
-        if ($origen = $request->headers->get('Origin')) {
-            return $origen;
-        }
-        $referer = parse_url((string) $request->headers->get('Referer'));
-
-        return isset($referer['scheme'], $referer['host']) ? $referer['scheme'].'://'.$referer['host'] : null;
-    }
 
     private function esEnlaceDeWompi(?string $url): bool
     {

@@ -31,6 +31,13 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(60)->by('todas')->response($this->demasiadas(...)),
         ]);
 
+        // Prueba gratis: crea un usuario en la demo y manda un correo.
+        RateLimiter::for('demo', fn (Request $request) => [
+            Limit::perHour(5)->by('hora:'.$request->ip())->response($this->demasiadas(...)),
+            Limit::perDay(10)->by('dia:'.$request->ip())->response($this->demasiadas(...)),
+            Limit::perHour(40)->by('todas-demo')->response($this->demasiadas(...)),
+        ]);
+
         // Login del panel: por IP y por correo (aunque cambie de IP).
         RateLimiter::for('entrar', fn (Request $request) => [
             Limit::perMinute(5)->by('ip:'.$request->ip()),

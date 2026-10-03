@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SolicitudDemo;
 use App\Models\Suscripcion;
 use App\Services\Bienvenidas;
 use App\Services\RevisorSuscripciones;
@@ -34,6 +35,24 @@ class CuentasController
         $mensual = Suscripcion::query()->whereIn('estado', ['activa', 'atrasada'])->sum('monto');
 
         return view('cuentas.index', compact('suscripciones', 'conteos', 'estado', 'buscar', 'porActivar', 'mensual'));
+    }
+
+    /** Quién pidió la demo de 24 horas desde la landing (leads). */
+    public function demos(Request $request)
+    {
+        $buscar = trim((string) $request->query('q'));
+        $demos = SolicitudDemo::query()
+            ->when($buscar !== '', fn ($q) => $q->where(fn ($q) => $q
+                ->where('nombre', 'like', "%{$buscar}%")
+                ->orWhere('email', 'like', "%{$buscar}%")
+                ->orWhere('especialidad', 'like', "%{$buscar}%")))
+            ->latest()
+            ->paginate(40)
+            ->withQueryString();
+        $hoy = SolicitudDemo::query()->where('created_at', '>=', now()->startOfDay())->count();
+        $vigentes = SolicitudDemo::query()->where('estado', 'enviada')->where('demo_expira_at', '>', now())->count();
+
+        return view('cuentas.demos', compact('demos', 'buscar', 'hoy', 'vigentes'));
     }
 
     public function show(Suscripcion $suscripcion)

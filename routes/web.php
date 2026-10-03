@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ContratarController;
 use App\Http\Controllers\CuentasController;
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,12 @@ Route::post('/contratar', [ContratarController::class, 'store'])
     ->middleware('throttle:contratar')
     ->name('contratar');
 
+// «Prueba Clinea 24 horas» de la landing.
+Route::get('/demo', fn () => redirect()->away('https://clinea.app/#demo'));
+Route::post('/demo', [DemoController::class, 'store'])
+    ->middleware('throttle:demo')
+    ->name('demo');
+
 Route::prefix('cuentas')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/entrar', [SesionController::class, 'create'])->name('login');
@@ -23,6 +30,7 @@ Route::prefix('cuentas')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::post('/salir', [SesionController::class, 'destroy'])->name('logout');
         Route::get('/', [CuentasController::class, 'index'])->name('cuentas.index');
+        Route::get('/demos', [CuentasController::class, 'demos'])->name('cuentas.demos');
         Route::get('/{suscripcion}', [CuentasController::class, 'show'])->name('cuentas.show');
         Route::post('/{suscripcion}/revisar', [CuentasController::class, 'revisar'])->name('cuentas.revisar');
         Route::post('/{suscripcion}/instancia', [CuentasController::class, 'instancia'])->name('cuentas.instancia');
