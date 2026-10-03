@@ -228,7 +228,9 @@ class ContratarTest extends TestCase
         $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 0, 'estado' => 'Activa', 'monto' => 14]]);
         $this->post('/contratar', $this->datos());
 
-        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('Resend caído'));
+        // Correo caído: un SMTP real que no responde.
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => '127.0.0.1', 'mail.mailers.smtp.port' => 1]);
+        Mail::swap(new \Illuminate\Mail\MailManager(app()));
         $this->artisan('cuentas:revisar --recientes --sin-avisos');
         $s = Suscripcion::sole();
         $this->assertSame('suscrita', $s->estado);
