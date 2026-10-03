@@ -140,7 +140,7 @@ class ContratarTest extends TestCase
         $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/contratar', $this->datos(['plan' => 'expediente']));
 
         $this->assertSame('HN', Suscripcion::sole()->pais);
-        $this->assertSame('9.99', Suscripcion::sole()->monto);
+        $this->assertSame('9.00', Suscripcion::sole()->monto);
     }
 
     public function test_datos_invalidos_muestran_la_pagina_de_error_sin_crear_nada(): void
