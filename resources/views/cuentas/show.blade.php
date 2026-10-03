@@ -41,7 +41,7 @@ dd{font-weight:500;overflow-wrap:anywhere}
         <dt>Primer pago</dt><dd>{{ $s->primer_pago_at?->format('d/m/Y') ?? '—' }}</dd>
         <dt>Último pago</dt><dd>{{ $s->ultimo_pago_at?->format('d/m/Y') ?? '—' }}</dd>
         <dt>Enlace Wompi</dt><dd>@if ($s->wompi_url)<a href="{{ $s->wompi_url }}" target="_blank" rel="noopener">{{ $s->wompi_url }}</a>@else — @endif</dd>
-        <dt>En Wompi</dt><dd>{{ $s->wompi_nombre_suscriptor ?? 'Sin suscriptor todavía' }}@if (! is_null($s->wompi_estado)) <span class="muted">(estado {{ $s->wompi_estado }})</span>@endif</dd>
+        <dt>En Wompi</dt><dd>{{ $s->wompi_nombre_suscriptor ?? 'Sin suscriptor todavía' }}@if ($s->wompi_alias) · alias «{{ $s->wompi_alias }}»@endif @if (! is_null($s->wompi_estado)) <span class="muted">(estado {{ $s->wompi_estado }})</span>@endif</dd>
         <dt>Revisado</dt><dd>{{ $s->revisada_at?->diffForHumans() ?? 'Nunca' }}</dd>
       </dl>
     </div>

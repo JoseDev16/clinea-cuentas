@@ -63,6 +63,7 @@ class RevisorSuscripciones
                 $s->wompi_suscripcion_id = $w['id'] ?? $s->wompi_suscripcion_id;
                 $s->wompi_estado = $w['estado'] ?? null;
                 $s->wompi_nombre_suscriptor = $w['nombreSuscriptor'] ?? $s->wompi_nombre_suscriptor;
+                $s->wompi_alias = $w['alias'] ?? $s->wompi_alias;
 
                 $pagos = (int) ($w['pagosRealizados'] ?? 0);
                 if ($pagos > $s->pagos_realizados) {

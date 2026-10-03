@@ -166,7 +166,7 @@ class ContratarTest extends TestCase
     public function test_revisar_detecta_el_primer_pago_y_los_siguientes(): void
     {
         Carbon::setTestNow('2026-10-17 10:00');
-        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 1, 'estado' => 1, 'nombreSuscriptor' => 'ANA LOPEZ', 'monto' => 14]]);
+        $this->fakeWompi([['id' => 'sus-1', 'pagosRealizados' => 1, 'estado' => 1, 'nombreSuscriptor' => 'ANA LOPEZ', 'alias' => 'San Rafael', 'monto' => 14]]);
         $this->post('/contratar', $this->datos());
 
         $this->artisan('cuentas:revisar')->expectsOutputToContain('primer_pago')->assertSuccessful();
@@ -175,6 +175,7 @@ class ContratarTest extends TestCase
         $this->assertSame('activa', $s->estado);
         $this->assertSame(1, $s->pagos_realizados);
         $this->assertSame('ANA LOPEZ', $s->wompi_nombre_suscriptor);
+        $this->assertSame('San Rafael', $s->wompi_alias);
         $this->assertCount(1, $s->pagos);
 
         // Mes siguiente: Wompi ya lleva 2 pagos.
