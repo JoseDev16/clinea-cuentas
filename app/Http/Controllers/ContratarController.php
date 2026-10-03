@@ -63,7 +63,7 @@ class ContratarController
 
         try {
             $enlace = $wompi->crearEnlaceRecurrente(
-                nombre: "Clínea · {$s->clinica} · {$plan['nombre']}",
+                nombre: "Clínea by fstudios · {$s->clinica} · {$plan['nombre']}",
                 monto: $plan['monto'],
                 diaDePago: $s->dia_cobro,
                 descripcion: $this->descripcion($s, $plan),
