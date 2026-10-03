@@ -24,7 +24,7 @@ class InstanciaDemo
      *
      * @throws RuntimeException con el mensaje CUENTA_EXISTENTE si el correo es de una cuenta real
      */
-    public function crearAcceso(string $nombre, string $correo, string $especialidad): array
+    public function crearAcceso(string $nombre, string $correo, string $especialidad, ?string $pais = null): array
     {
         if (! $this->configurada()) {
             throw new RuntimeException('Falta CLINEA_DEMO_API_TOKEN en el .env');
@@ -39,6 +39,8 @@ class InstanciaDemo
                     'nombre' => $nombre,
                     'correo' => $correo,
                     'especialidad' => $especialidad,
+                    // El membrete de muestra lleva una dirección de ese país.
+                    'pais' => $pais,
                 ])
                 ->throw()
                 ->json();

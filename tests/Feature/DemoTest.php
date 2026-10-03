@@ -50,7 +50,7 @@ class DemoTest extends TestCase
     {
         $this->fakeDemo();
 
-        $this->post('/demo', $this->datos())
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos())
             ->assertOk()
             ->assertSee('Revisa tu correo')
             ->assertSee('ana@correo.com')
@@ -59,7 +59,8 @@ class DemoTest extends TestCase
         Http::assertSent(fn ($r) => $r->url() === 'https://demo.clinea.app/api/accesos-demo'
             && $r->hasHeader('Authorization', 'Bearer tok-demo')
             && $r['correo'] === 'ana@correo.com'
-            && $r['especialidad'] === 'Pediatría');
+            && $r['especialidad'] === 'Pediatría'
+            && $r['pais'] === 'HN');
 
         $d = SolicitudDemo::sole();
         $this->assertSame('enviada', $d->estado);
