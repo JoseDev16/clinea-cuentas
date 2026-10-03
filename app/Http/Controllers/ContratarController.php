@@ -66,8 +66,7 @@ class ContratarController
                 nombre: "Clínea · {$s->clinica} · {$plan['nombre']}",
                 monto: $plan['monto'],
                 diaDePago: $s->dia_cobro,
-                descripcion: "Suscripción mensual a Clínea, plan {$plan['nombre']}, para {$s->clinica}. "
-                    ."Se cobra el día {$s->dia_cobro} de cada mes. Al completar el pago te contactamos para activar tu clínica.",
+                descripcion: $this->descripcion($s, $plan),
             );
         } catch (Throwable $e) {
             Log::error("No se pudo crear el enlace de Wompi para la suscripción {$s->id}", ['error' => $e->getMessage()]);
@@ -81,6 +80,24 @@ class ContratarController
         $avisos->solicitud($s);
 
         return redirect()->away($enlace['url']);
+    }
+
+    /**
+     * Texto que Wompi muestra junto al formulario de pago. Explica por qué el
+     * comercio sale con otro nombre (la cuenta de Wompi es del titular de
+     * fstudios) y guía los pasos, para que el cliente no se asuste ni se pierda.
+     */
+    private function descripcion(Suscripcion $s, array $plan): string
+    {
+        $monto = '$'.number_format($plan['monto'], 2);
+        $comercio = config('clinea.comercio_wompi');
+
+        return implode("\n", array_filter([
+            "Suscripción mensual a Clínea — plan {$plan['nombre']} para {$s->clinica}: {$monto} al mes, cobrados el día {$s->dia_cobro} de cada mes.",
+            $comercio ? "Importante: en esta página el comercio aparece como {$comercio}. Es el titular de fstudios, la empresa que desarrolla Clínea; es el mismo nombre que verás en tu estado de cuenta." : null,
+            'Pasos: 1) Escribe los datos de tu tarjeta. 2) Acepta los términos y confirma. 3) Cuando te pregunte si deseas guardar la suscripción, elige «Sí» para que el cobro sea automático cada mes. 4) Listo: te escribimos por WhatsApp para activar tu clínica.',
+            'Puedes cancelar cuando quieras escribiéndonos al WhatsApp +503 6678 1544.',
+        ]));
     }
 
     /**

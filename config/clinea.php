@@ -32,6 +32,10 @@ return [
     // Wompi no admite el día 29-31 en todos los meses; se cobra a más tardar el 28.
     'dia_cobro_maximo' => 28,
 
+    // Nombre con que Wompi muestra el comercio en la página de pago (el titular
+    // de la cuenta). Se explica al cliente para que no le sorprenda.
+    'comercio_wompi' => env('CLINEA_COMERCIO_WOMPI'),
+
     'whatsapp_soporte' => env('CLINEA_WHATSAPP', '50366781544'),
 
     // Orígenes desde los que se acepta el formulario de contratar (la landing).
