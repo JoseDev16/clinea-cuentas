@@ -392,7 +392,10 @@ class ContratarTest extends TestCase
 
     public function test_limita_las_solicitudes_por_ip(): void
     {
-        $this->fakeWompi();
+        Http::fake([
+            'id.wompi.sv/*' => Http::response(['access_token' => 'tok']),
+            'api.wompi.sv/EnlacePagoRecurrente' => fn () => Http::response(['idEnlace' => uniqid('enl-'), 'urlEnlace' => 'https://lk.wompi.sv/abc']),
+        ]);
         foreach (range(1, 5) as $i) {
             $this->post('/contratar', $this->datos(['email' => "ana{$i}@correo.com"]))->assertRedirect();
         }
