@@ -84,20 +84,20 @@ class ContratarController
 
     /**
      * Texto que Wompi muestra junto al formulario de pago. Explica por qué el
-     * comercio sale con otro nombre (la cuenta de Wompi es del titular de
-     * fstudios) y guía los pasos, para que el cliente no se asuste ni se pierda.
+     * comercio sale con otro nombre (la cuenta de Wompi está a nombre del
+     * representante legal) y guía los pasos, para que el cliente no se asuste
+     * ni se pierda. El nombre en sí no se escribe: Wompi ya lo muestra.
      */
     private function descripcion(Suscripcion $s, array $plan): string
     {
         $monto = '$'.number_format($plan['monto'], 2);
-        $comercio = config('clinea.comercio_wompi');
 
-        return implode("\n", array_filter([
+        return implode("\n", [
             "Suscripción mensual a Clínea — plan {$plan['nombre']} para {$s->clinica}: {$monto} al mes, cobrados el día {$s->dia_cobro} de cada mes.",
-            $comercio ? "Importante: en esta página el comercio aparece como {$comercio}. Es el titular de fstudios, la empresa que desarrolla Clínea; es el mismo nombre que verás en tu estado de cuenta." : null,
+            'Importante: el comercio aparece con el nombre del representante legal de Clínea; es el mismo nombre que verás en tu estado de cuenta.',
             "Pasos: 1) En «Alias» escribe el nombre de tu clínica: {$s->clinica}. 2) Escribe los datos de tu tarjeta. 3) Acepta los términos y confirma. 4) Cuando te pregunte si deseas guardar la suscripción, elige «Sí» para que el cobro sea automático cada mes. 5) Listo: te escribimos por WhatsApp para activar tu clínica.",
             'Puedes cancelar cuando quieras escribiéndonos al WhatsApp +503 6678 1544.',
-        ]));
+        ]);
     }
 
     /**

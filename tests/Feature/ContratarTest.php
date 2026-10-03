@@ -85,13 +85,12 @@ class ContratarTest extends TestCase
 
     public function test_la_descripcion_explica_el_nombre_del_comercio_y_los_pasos(): void
     {
-        config(['clinea.comercio_wompi' => 'TITULAR DE PRUEBA']);
         $this->fakeWompi();
 
         $this->post('/contratar', $this->datos());
 
         Http::assertSent(fn ($r) => $r->url() === 'https://api.wompi.sv/EnlacePagoRecurrente'
-            && str_contains($r['descripcionProducto'], 'el comercio aparece como TITULAR DE PRUEBA')
+            && str_contains($r['descripcionProducto'], 'el nombre del representante legal de Clínea')
             && str_contains($r['descripcionProducto'], 'elige «Sí»')
             && str_contains($r['descripcionProducto'], 'En «Alias» escribe el nombre de tu clínica: Clínica San Rafael')
             && str_contains($r['descripcionProducto'], '$14.00 al mes'));
