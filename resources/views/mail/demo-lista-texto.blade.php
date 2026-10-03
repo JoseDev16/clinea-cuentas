@@ -6,7 +6,7 @@ TUS DATOS DE ACCESO
 Entrar en: {{ $url }}
 Correo: {{ $correo }}
 Contraseña: {{ $password }}
-Vence el {{ $vence }}.
+Vence el {{ $vence }}
 
 PARA APROVECHARLA
 - Al entrar se abre un recorrido que te guía paso a paso.

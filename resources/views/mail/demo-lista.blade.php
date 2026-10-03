@@ -50,7 +50,7 @@
             <tr><td style="padding:0 22px 10px;{{ $mono }};font-size:17px;font-weight:700;color:#23282E">{{ $correo }}</td></tr>
             <tr><td style="padding:6px 22px 2px;{{ $f }};font-size:13px;color:#5C6670">Contraseña</td></tr>
             <tr><td style="padding:0 22px 14px"><span style="display:inline-block;{{ $mono }};font-size:20px;font-weight:700;letter-spacing:1px;color:#23282E;background:#F7F4EE;border-radius:8px;padding:6px 12px">{{ $password }}</span></td></tr>
-            <tr><td style="padding:0 22px 20px;{{ $f }};font-size:14px;color:#9A3412"><b>Vence el {{ $vence }}.</b></td></tr>
+            <tr><td style="padding:0 22px 20px;{{ $f }};font-size:14px;color:#9A3412"><b>Vence el {{ $vence }}</b></td></tr>
           </table>
 
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px"><tr>
