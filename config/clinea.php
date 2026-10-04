@@ -8,9 +8,11 @@ return [
      * estos mismos precios; si cambias uno aquí, cámbialo también allá.
      */
     'planes' => [
+        // Se pueden cambiar por .env sin tocar la landing (p. ej. CLINEA_SV_EXPEDIENTE=1
+        // para una compra de prueba con tarjeta real). Sin la variable: $9 / $14.
         'SV' => [
-            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => 9.00],
-            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => 14.00],
+            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_SV_EXPEDIENTE', 9.00)],
+            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_SV_WHATSAPP', 14.00)],
         ],
         // Honduras y Guatemala: Wompi solo cobra en USD y el banco del cliente gana algo en
         // la conversión, así que se cobra un poco menos ($8 / $13) y la landing
