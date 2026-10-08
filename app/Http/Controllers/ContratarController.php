@@ -6,6 +6,7 @@ use App\Models\Suscripcion;
 use App\Services\Avisos;
 use App\Services\Wompi;
 use App\Support\FormularioPublico;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -15,11 +16,36 @@ use Throwable;
 /**
  * Recibe el formulario de «Contratar» de la landing (clinea.app), crea un
  * enlace recurrente de Wompi solo para esa clínica y redirige a pagar.
+ *
+ * Con el pago en línea apagado (config clinea.pagos.online_habilitado) no se
+ * crea nada: se contrata por WhatsApp desde la landing.
  */
 class ContratarController
 {
+    /**
+     * Lo que la landing necesita saber para pintar los botones: si el pago en
+     * línea está encendido y a qué WhatsApp escribir. Es público y no lleva
+     * datos de nadie.
+     */
+    public function estado(): JsonResponse
+    {
+        return response()->json([
+            'pagos_online' => (bool) config('clinea.pagos.online_habilitado'),
+            'whatsapp' => (string) config('clinea.contacto.whatsapp'),
+            'mensajes' => config('clinea.contacto.mensajes'),
+        ])->withHeaders([
+            'Cache-Control' => 'no-store',
+            'Access-Control-Allow-Origin' => '*',
+        ]);
+    }
+
     public function store(Request $request, Wompi $wompi, Avisos $avisos)
     {
+        // Pago en línea apagado: la URL ya no abre ningún pago, solo regresa a los planes.
+        if (! config('clinea.pagos.online_habilitado')) {
+            return redirect()->away('https://clinea.app/#planes');
+        }
+
         // Solo se acepta el formulario enviado desde la landing. Los navegadores
         // siempre mandan Origin (o al menos Referer) en un POST; si no viene
         // ninguno, es un script y se rechaza.

@@ -19,7 +19,8 @@ class ContratarTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.wompi.app_id' => 'app-test', 'services.wompi.api_secret' => 'secret-test']);
+        // Estas pruebas cubren el flujo de Wompi: el pago en línea va encendido.
+        config(['services.wompi.app_id' => 'app-test', 'services.wompi.api_secret' => 'secret-test', 'clinea.pagos.online_habilitado' => true]);
         Mail::fake();
         // Como lo manda el navegador desde la landing.
         $this->withHeader('Origin', 'https://clinea.app');
@@ -74,13 +75,13 @@ class ContratarTest extends TestCase
         $s = Suscripcion::sole();
         $this->assertSame('pendiente', $s->estado);
         $this->assertSame('SV', $s->pais);
-        $this->assertSame('14.00', $s->monto);
+        $this->assertSame('20.00', $s->monto);
         $this->assertSame(17, $s->dia_cobro);
         $this->assertSame('ana@correo.com', $s->email);
         $this->assertSame('enl-123', $s->wompi_enlace_id);
 
         Http::assertSent(fn ($r) => $r->url() === 'https://api.wompi.sv/EnlacePagoRecurrente'
-            && $r['monto'] == 14.0
+            && $r['monto'] == 20.0
             && $r['diaDePago'] === 17
             && $r['idAplicativo'] === 'app-test'
             && str_contains($r['nombre'], 'Clínica San Rafael'));
@@ -97,7 +98,7 @@ class ContratarTest extends TestCase
             && str_contains($r['descripcionProducto'], 'el nombre del representante legal de Clinea')
             && str_contains($r['descripcionProducto'], 'elige «Sí»')
             && str_contains($r['descripcionProducto'], 'En «Alias» escribe el nombre de tu clínica: Clínica San Rafael')
-            && str_contains($r['descripcionProducto'], '$14.00 al mes'));
+            && str_contains($r['descripcionProducto'], '$20.00 al mes'));
     }
 
     public function test_el_dia_de_cobro_no_pasa_del_28(): void
@@ -118,7 +119,7 @@ class ContratarTest extends TestCase
             ->post('/contratar', $this->datos(['pais' => 'HN', 'plan' => 'expediente']));
 
         $this->assertSame('SV', Suscripcion::sole()->pais);
-        $this->assertSame('9.00', Suscripcion::sole()->monto);
+        $this->assertSame('10.00', Suscripcion::sole()->monto);
     }
 
     public function test_fuera_de_el_salvador_y_honduras_paga_el_precio_de_el_salvador_aunque_la_pagina_diga_hn(): void
@@ -130,7 +131,7 @@ class ContratarTest extends TestCase
             ->post('/contratar', $this->datos(['pais' => 'HN', 'plan' => 'whatsapp']));
 
         $this->assertSame('SV', Suscripcion::sole()->pais);
-        $this->assertSame('14.00', Suscripcion::sole()->monto);
+        $this->assertSame('20.00', Suscripcion::sole()->monto);
     }
 
     public function test_honduras_usa_su_precio(): void
@@ -285,7 +286,7 @@ class ContratarTest extends TestCase
         $this->assertStringContainsString('¡Hola, Dra. Ana López! Te damos la bienvenida a Clinea.', $html);
         $this->assertStringContainsString('12:30 p. m.', $html);
         $this->assertStringContainsString('+503 6678-1544', $html);
-        $this->assertStringContainsString('Expediente + WhatsApp', $html);
+        $this->assertStringContainsString('Premium', $html);
         $this->assertStringNotContainsString('Clínea', $html);
 
         $adjuntos = (new Bienvenida($s))->attachments();
@@ -516,5 +517,46 @@ class ContratarTest extends TestCase
     public function test_el_panel_pide_login(): void
     {
         $this->get('/cuentas')->assertRedirect('/cuentas/entrar');
+    }
+    // ===================== Pago en línea apagado (se contrata por WhatsApp) =====================
+
+    public function test_con_el_pago_en_linea_apagado_contratar_no_crea_nada_y_regresa_a_los_planes(): void
+    {
+        config(['clinea.pagos.online_habilitado' => false]);
+        Http::fake();
+
+        $this->post('/contratar', $this->datos())->assertRedirect('https://clinea.app/#planes');
+
+        $this->assertSame(0, Suscripcion::count());
+        Http::assertNothingSent();
+        Mail::assertNothingSent();
+    }
+
+    public function test_el_estado_le_dice_a_la_landing_si_hay_pago_en_linea_y_a_que_whatsapp_escribir(): void
+    {
+        config(['clinea.pagos.online_habilitado' => false]);
+        $this->get('/contratar/estado')
+            ->assertOk()
+            ->assertHeader('Access-Control-Allow-Origin', '*')
+            ->assertJson([
+                'pagos_online' => false,
+                'whatsapp' => '50366781544',
+                'mensajes' => ['contratar' => 'Hola, quiero contratar el plan {plan} de Clinea{pais}.'],
+            ]);
+
+        config(['clinea.pagos.online_habilitado' => true]);
+        $this->get('/contratar/estado')->assertJson(['pagos_online' => true]);
+    }
+
+    public function test_los_planes_se_llaman_igual_en_los_tres_paises_y_solo_cambia_el_precio(): void
+    {
+        foreach (['SV', 'HN', 'GT'] as $pais) {
+            $this->assertSame('Básico', config("clinea.planes.{$pais}.expediente.nombre"));
+            $this->assertSame('Premium', config("clinea.planes.{$pais}.whatsapp.nombre"));
+        }
+        $this->assertSame(10.0, config('clinea.planes.SV.expediente.monto'));
+        $this->assertSame(20.0, config('clinea.planes.SV.whatsapp.monto'));
+        $this->assertSame(['L240', 'L370'], [config('clinea.planes.HN.expediente.anunciado'), config('clinea.planes.HN.whatsapp.anunciado')]);
+        $this->assertSame(['Q65', 'Q105'], [config('clinea.planes.GT.expediente.anunciado'), config('clinea.planes.GT.whatsapp.anunciado')]);
     }
 }

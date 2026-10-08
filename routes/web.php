@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => redirect()->route('cuentas.index'));
 
 Route::get('/contratar', fn () => redirect()->away('https://clinea.app/#planes'));
+// Sin extensión: nginx sirve como archivo estático todo lo que termina en .json.
+Route::get('/contratar/estado', [ContratarController::class, 'estado'])->name('contratar.estado');
 Route::post('/contratar', [ContratarController::class, 'store'])
     ->middleware('throttle:contratar')
     ->name('contratar');

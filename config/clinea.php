@@ -3,30 +3,66 @@
 return [
 
     /*
-     * Planes por país. El monto es lo que Wompi cobra cada mes (en USD: la
-     * cuenta de Wompi es de El Salvador). La landing (clinea.app) muestra
-     * estos mismos precios; si cambias uno aquí, cámbialo también allá.
+     * Pago en línea con Wompi.
+     *
+     * Apagado (CLINEA_PAGOS_ONLINE=false, el valor por defecto): la landing
+     * muestra «Contratar» por WhatsApp, POST /contratar ya no crea enlaces y
+     * redirige a los planes. Nada de Wompi se borra: el servicio, las tablas,
+     * las credenciales del .env y la revisión de suscripciones (cada minuto y
+     * cada hora) siguen igual, para las suscripciones que ya existen.
+     *
+     * Para reactivarlo: CLINEA_PAGOS_ONLINE=true en el .env y
+     * `php artisan config:cache`. La landing lo lee de GET /contratar/estado y
+     * vuelve a abrir la ventana de pago sola.
+     */
+    'pagos' => [
+        'online_habilitado' => (bool) env('CLINEA_PAGOS_ONLINE', false),
+    ],
+
+    /*
+     * Contratación por WhatsApp (mientras el pago en línea está apagado).
+     * {plan} es el nombre del plan y {pais} el país, si se conoce:
+     * «Hola, quiero contratar el plan Básico de Clinea (El Salvador).»
+     */
+    'contacto' => [
+        'whatsapp' => env('CLINEA_WHATSAPP', '50366781544'),
+        'mensajes' => [
+            'contratar' => 'Hola, quiero contratar el plan {plan} de Clinea{pais}.',
+            'asesor' => 'Hola, quiero información sobre el plan {plan} de Clinea{pais}.',
+        ],
+    ],
+
+    /*
+     * Planes por país. El nombre y el contenido son los mismos en los tres
+     * países; solo cambia el precio. El monto es lo que Wompi cobra cada mes
+     * (en USD: la cuenta de Wompi es de El Salvador). La landing (clinea.app)
+     * muestra estos mismos precios; si cambias uno aquí, cámbialo también allá.
+     *
+     * Las claves (expediente / whatsapp) son las que guardan las suscripciones:
+     * no se renombran. Básico = expediente; Premium = whatsapp (recordatorios
+     * con la Asistente virtual Tere). Facturación electrónica no tiene precio:
+     * se habla con un asesor.
      */
     'planes' => [
         // Se pueden cambiar por .env sin tocar la landing (p. ej. CLINEA_SV_EXPEDIENTE=1
-        // para una compra de prueba con tarjeta real). Sin la variable: $9 / $14.
+        // para una compra de prueba con tarjeta real). Sin la variable: $10 / $20.
         'SV' => [
-            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_SV_EXPEDIENTE', 9.00)],
-            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_SV_WHATSAPP', 14.00)],
+            'expediente' => ['nombre' => 'Básico', 'monto' => (float) env('CLINEA_SV_EXPEDIENTE', 10.00)],
+            'whatsapp' => ['nombre' => 'Premium', 'monto' => (float) env('CLINEA_SV_WHATSAPP', 20.00)],
         ],
         // Honduras y Guatemala: Wompi solo cobra en USD y el banco del cliente gana algo en
         // la conversión, así que se cobra un poco menos ($8 / $13) y la landing
         // anuncia un precio redondo en lempiras (L240 / L370) que lo cubre.
         'HN' => [
             // «anunciado»: el precio en lempiras de la landing; el cliente nunca paga más.
-            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_HN_EXPEDIENTE', 8.00), 'anunciado' => 'L240'],
-            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_HN_WHATSAPP', 13.00), 'anunciado' => 'L370'],
+            'expediente' => ['nombre' => 'Básico', 'monto' => (float) env('CLINEA_HN_EXPEDIENTE', 8.00), 'anunciado' => 'L240'],
+            'whatsapp' => ['nombre' => 'Premium', 'monto' => (float) env('CLINEA_HN_WHATSAPP', 13.00), 'anunciado' => 'L370'],
         ],
         // Guatemala: misma lógica. $8 / $13 ≈ Q61 / Q99 a ~Q7.63 por dólar; se
         // anuncia Q65 / Q105, que aguanta hasta ~Q8.08 por dólar.
         'GT' => [
-            'expediente' => ['nombre' => 'Expediente clínico', 'monto' => (float) env('CLINEA_GT_EXPEDIENTE', 8.00), 'anunciado' => 'Q65'],
-            'whatsapp' => ['nombre' => 'Expediente + WhatsApp', 'monto' => (float) env('CLINEA_GT_WHATSAPP', 13.00), 'anunciado' => 'Q105'],
+            'expediente' => ['nombre' => 'Básico', 'monto' => (float) env('CLINEA_GT_EXPEDIENTE', 8.00), 'anunciado' => 'Q65'],
+            'whatsapp' => ['nombre' => 'Premium', 'monto' => (float) env('CLINEA_GT_WHATSAPP', 13.00), 'anunciado' => 'Q105'],
         ],
     ],
 
@@ -51,6 +87,7 @@ return [
     // Wompi no admite el día 29-31 en todos los meses; se cobra a más tardar el 28.
     'dia_cobro_maximo' => 28,
 
+    // Mismo número que contacto.whatsapp (correos, carta PDF y avisos lo usan con este nombre).
     'whatsapp_soporte' => env('CLINEA_WHATSAPP', '50366781544'),
     'correo_soporte' => env('CLINEA_CORREO_SOPORTE', 'hello@fstudios.dev'),
 
