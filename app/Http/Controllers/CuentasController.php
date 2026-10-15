@@ -45,6 +45,7 @@ class CuentasController
             ->when($buscar !== '', fn ($q) => $q->where(fn ($q) => $q
                 ->where('nombre', 'like', "%{$buscar}%")
                 ->orWhere('email', 'like', "%{$buscar}%")
+                ->orWhere('whatsapp', 'like', "%{$buscar}%")
                 ->orWhere('especialidad', 'like', "%{$buscar}%")))
             ->latest()
             ->paginate(40)

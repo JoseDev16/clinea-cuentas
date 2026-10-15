@@ -27,6 +27,14 @@ class SolicitudDemo extends Model
         return self::ESTADOS[$this->estado] ?? $this->estado;
     }
 
+    /** Enlace wa.me para escribirle; null si no dejó número. */
+    public function enlaceWhatsapp(): ?string
+    {
+        $digitos = preg_replace('/\D+/', '', (string) $this->whatsapp);
+
+        return $digitos !== '' ? 'https://wa.me/'.$digitos : null;
+    }
+
     public function vigente(): bool
     {
         return $this->estado === 'enviada' && $this->demo_expira_at?->isFuture();

@@ -28,7 +28,7 @@ tr:last-child td{border-bottom:none}
   <p class="muted">Doctores que pidieron «Prueba Clinea 24 horas» en clinea.app. Hoy: <b>{{ $hoy }}</b> · con acceso vigente: <b>{{ $vigentes }}</b>.</p>
 
   <form class="filtros" method="GET">
-    <input name="q" value="{{ $buscar }}" placeholder="Buscar nombre, correo o especialidad">
+    <input name="q" value="{{ $buscar }}" placeholder="Buscar nombre, correo, WhatsApp o especialidad">
     <button class="btn">Buscar</button>
   </form>
 
@@ -40,7 +40,7 @@ tr:last-child td{border-bottom:none}
       <tbody>
       @foreach ($demos as $d)
         <tr>
-          <td><b>{{ $d->nombre }}</b><br><small class="muted">{{ $d->email }}{{ $d->pais ? ' · '.$d->pais : '' }}</small></td>
+          <td><b>{{ $d->nombre }}</b><br><small class="muted">{{ $d->email }}{{ $d->whatsapp ? ' · '.$d->whatsapp : '' }}{{ $d->pais ? ' · '.$d->pais : '' }}</small></td>
           <td>{{ $d->especialidad }}</td>
           <td>
             <span class="badge b-{{ $d->estado }}">{{ $d->etiquetaEstado() }}</span>
@@ -48,7 +48,10 @@ tr:last-child td{border-bottom:none}
             @if ($d->detalle && $d->estado !== 'enviada')<br><small class="muted">{{ $d->detalle }}</small>@endif
           </td>
           <td>{{ $d->created_at->format('d/m/Y H:i') }}</td>
-          <td><a class="btn" href="mailto:{{ $d->email }}?subject={{ rawurlencode('Tu demo de Clinea') }}">Escribirle</a></td>
+          <td>
+            @if ($d->enlaceWhatsapp())<a class="btn" href="{{ $d->enlaceWhatsapp() }}" target="_blank" rel="noopener">WhatsApp</a>@endif
+            <a class="btn" href="mailto:{{ $d->email }}?subject={{ rawurlencode('Tu demo de Clinea') }}">Correo</a>
+          </td>
         </tr>
       @endforeach
       </tbody>

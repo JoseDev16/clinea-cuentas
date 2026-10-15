@@ -38,20 +38,24 @@ class DemoController
         $request->merge([
             'nombre' => FormularioPublico::limpiar($request->input('nombre')),
             'email' => mb_strtolower(FormularioPublico::limpiar($request->input('email'))),
+            'whatsapp' => FormularioPublico::limpiar($request->input('whatsapp')),
         ]);
 
         $v = Validator::make($request->all(), [
             'nombre' => FormularioPublico::reglasNombre(),
             'especialidad' => ['required', Rule::in(config('clinea.especialidades'))],
             'email' => ['required', 'email:rfc', 'max:160'],
+            'whatsapp' => ['required', 'string', 'max:30', 'regex:/^[+\d\s\-()]{8,}$/'],
         ], [
             'nombre.regex' => 'Tu nombre solo puede llevar letras, números y signos comunes (. , - \' & ( ) #).',
             'nombre.not_regex' => 'Escribe solo tu nombre, sin enlaces ni direcciones web.',
             'especialidad.in' => 'Elige tu especialidad de la lista.',
+            'whatsapp.regex' => 'Escribe un número de WhatsApp válido.',
         ], [
             'nombre' => 'tu nombre',
             'especialidad' => 'tu especialidad',
             'email' => 'tu correo',
+            'whatsapp' => 'tu WhatsApp',
         ]);
         if ($v->fails()) {
             return $this->resultado('error', 422, errores: $v->errors()->all());
@@ -72,6 +76,7 @@ class DemoController
             'nombre' => $datos['nombre'],
             'especialidad' => $datos['especialidad'],
             'email' => $datos['email'],
+            'whatsapp' => $datos['whatsapp'],
             'pais' => $this->pais($request),
             'ip' => $request->ip(),
         ]);

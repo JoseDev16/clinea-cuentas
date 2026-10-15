@@ -32,6 +32,7 @@ class DemoTest extends TestCase
             'nombre' => 'Dra. Ana López',
             'especialidad' => 'Pediatría',
             'email' => 'Ana@Correo.com',
+            'whatsapp' => '+503 7000 0000',
         ], $extra);
     }
 
@@ -64,13 +65,26 @@ class DemoTest extends TestCase
 
         $d = SolicitudDemo::sole();
         $this->assertSame('enviada', $d->estado);
+        $this->assertSame('+503 7000 0000', $d->whatsapp);
         $this->assertNotNull($d->demo_expira_at);
 
         Mail::assertSent(DemoLista::class, fn (DemoLista $m) => $m->hasTo('ana@correo.com')
             && $m->hasReplyTo('hello@fstudios.dev')
             && str_contains($m->render(), 'Clave12345')
             && str_contains($m->render(), 'https://demo.clinea.app/login'));
-        Mail::assertSent(Aviso::class, fn (Aviso $m) => str_contains($m->asunto, 'nueva demo'));
+        Mail::assertSent(Aviso::class, fn (Aviso $m) => str_contains($m->asunto, 'nueva demo')
+            && str_contains($m->render(), '+503 7000 0000'));
+    }
+
+    public function test_el_whatsapp_es_obligatorio_y_debe_ser_un_numero(): void
+    {
+        $this->fakeDemo();
+
+        $this->post('/demo', $this->datos(['whatsapp' => '']))->assertStatus(422);
+        $this->post('/demo', $this->datos(['whatsapp' => 'llamame']))->assertStatus(422)->assertSee('WhatsApp válido');
+
+        $this->assertSame(0, SolicitudDemo::count());
+        Http::assertNothingSent();
     }
 
     public function test_si_el_correo_es_de_una_cuenta_real_no_se_envia_nada(): void
@@ -142,13 +156,14 @@ class DemoTest extends TestCase
 
     public function test_el_panel_lista_las_demos(): void
     {
-        SolicitudDemo::create(['nombre' => 'Dra. Ana López', 'especialidad' => 'Pediatría', 'email' => 'ana@correo.com', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()]);
+        SolicitudDemo::create(['nombre' => 'Dra. Ana López', 'especialidad' => 'Pediatría', 'email' => 'ana@correo.com', 'whatsapp' => '+503 7000 0000', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()]);
 
         $this->actingAs(User::factory()->create())->get('/cuentas/demos')
             ->assertOk()
             ->assertSee('Dra. Ana López')
             ->assertSee('Pediatría')
-            ->assertSee('Acceso enviado');
+            ->assertSee('Acceso enviado')
+            ->assertSee('https://wa.me/50370000000', false);
         $this->get('/cuentas/demos')->assertOk(); // ya con sesión
         auth()->logout();
         $this->get('/cuentas/demos')->assertRedirect('/cuentas/entrar');

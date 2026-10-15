@@ -36,7 +36,7 @@ class Avisos
         $this->mandar($asunto, [[
             'titulo' => $d->etiquetaEstado().': '.$d->nombre,
             'lineas' => array_values(array_filter([
-                $d->especialidad.' · '.$d->email.($d->pais ? ' · '.$d->pais : ''),
+                $d->especialidad.' · '.$d->email.($d->whatsapp ? ' · WhatsApp '.$d->whatsapp : '').($d->pais ? ' · '.$d->pais : ''),
                 $d->demo_expira_at ? 'Su acceso vence el '.$d->demo_expira_at->format('d/m/Y H:i') : null,
                 $d->detalle,
             ])),
