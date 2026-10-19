@@ -1,6 +1,6 @@
 ¡Hola, {{ $nombre }}! Ya puedes probar {{ $marca }}.
 
-Te preparamos un acceso de {{ $horas }} horas para que conozcas el sistema por tu cuenta.
+Te preparamos un acceso de {{ $duracion }} para que conozcas el sistema por tu cuenta.
 
 TUS DATOS DE ACCESO
 Entrar en: {{ $url }}

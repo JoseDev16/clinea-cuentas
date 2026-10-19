@@ -17,7 +17,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * «Prueba Clinea 24 horas» de la landing: guarda el lead, crea el acceso en la
+ * «Prueba gratis» de la landing: guarda el lead, crea el acceso en la
  * instancia demo y le manda al doctor su usuario y contraseña por correo.
  * Las credenciales NO se muestran en pantalla: solo llegan al correo, así el
  * acceso es de quien de verdad es dueño de esa dirección.

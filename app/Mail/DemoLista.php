@@ -12,7 +12,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Support\Carbon;
 
 /**
- * Para el doctor que pidió «Prueba Clinea 24 horas»: su usuario y contraseña
+ * Para el doctor que pidió «Prueba gratis»: su usuario y contraseña
  * de la demo. La contraseña viaja solo en este correo (no se guarda aquí), así
  * el acceso le llega únicamente a quien es dueño del correo.
  */
@@ -27,7 +27,7 @@ class DemoLista extends Mailable
         return new Envelope(
             from: new Address(config('mail.from.address'), config('clinea.marca')),
             replyTo: [new Address(config('clinea.correo_soporte'), 'Equipo de '.config('clinea.marca'))],
-            subject: 'Tu demo de '.config('clinea.marca').' está lista: entra y pruébala 24 horas',
+            subject: 'Tu demo de '.config('clinea.marca').' está lista: entra y pruébala '.config('clinea.demo.duracion'),
         );
     }
 
@@ -45,7 +45,7 @@ class DemoLista extends Mailable
                 'url' => $this->acceso['url'],
                 'correo' => $this->acceso['correo'],
                 'password' => $this->acceso['password'],
-                'horas' => config('clinea.demo.horas'),
+                'duracion' => config('clinea.demo.duracion'),
                 'vence' => $vence->isoFormat('dddd D [de] MMMM, h:mm a'),
                 'whatsappUrl' => 'https://wa.me/'.$whatsapp.'?text='.rawurlencode("Hola, soy {$this->solicitud->nombre}. Estoy probando la demo de Clinea y tengo una pregunta."),
                 'whatsappVisible' => Bienvenidas::telefonoVisible($whatsapp),

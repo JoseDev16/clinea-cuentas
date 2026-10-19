@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Pide a la instancia demo de Clinea (demo.clinea.app) un acceso de 24 horas.
+ * Pide a la instancia demo de Clinea (demo.clinea.app) un acceso de demostración (7 días).
  * Del otro lado: App\Http\Controllers\Api\AccesoDemoController del EMR.
  */
 class InstanciaDemo
@@ -56,5 +56,29 @@ class InstanciaDemo
         }
 
         return $r;
+    }
+
+    /**
+     * Si cada doctor entró a su demo y cuándo, por correo. Los correos que en
+     * la demo no son (o ya no son) un acceso de demostración no vienen.
+     *
+     * @param  list<string>  $correos
+     * @return array<string, array{primer_ingreso_en: ?string, ultimo_ingreso_en: ?string, ingresos: int, expira_en: ?string}>
+     */
+    public function actividad(array $correos, int $timeout = 15): array
+    {
+        if (! $this->configurada() || $correos === []) {
+            return [];
+        }
+
+        $r = Http::baseUrl(rtrim(config('clinea.demo.url'), '/'))
+            ->withToken(config('clinea.demo.token'))
+            ->acceptJson()
+            ->timeout($timeout)
+            ->get('/api/accesos-demo/actividad', ['correos' => array_values($correos)])
+            ->throw()
+            ->json('demos', []);
+
+        return collect($r)->keyBy(fn ($d) => mb_strtolower($d['correo']))->all();
     }
 }

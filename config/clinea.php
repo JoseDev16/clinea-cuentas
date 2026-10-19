@@ -65,12 +65,13 @@ return [
     // minuto para detectar la suscripción casi al instante.
     'horas_vigilancia' => (int) env('CLINEA_HORAS_VIGILANCIA', 48),
 
-    // «Prueba Clinea 24 horas»: la landing pide la demo y aquí se crea el
+    // «Prueba gratis»: la landing pide la demo y aquí se crea el
     // acceso en la instancia demo (POST {url}/api/accesos-demo con el token).
     'demo' => [
         'url' => env('CLINEA_DEMO_URL', 'https://demo.clinea.app'),
         'token' => env('CLINEA_DEMO_API_TOKEN'),
-        'horas' => 24,
+        // Cuánto dura el acceso, en palabras (lo decide User::HORAS_DEMO en el EMR).
+        'duracion' => '7 días',
         // Solicitudes con el mismo correo en 24 h (cada una genera otra contraseña).
         'maximo_por_correo' => 2,
     ],

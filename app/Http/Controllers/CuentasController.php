@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SolicitudDemo;
 use App\Models\Suscripcion;
+use App\Services\ActividadDemos;
 use App\Services\Bienvenidas;
 use App\Services\RevisorSuscripciones;
 use App\Services\Wompi;
@@ -37,9 +38,18 @@ class CuentasController
         return view('cuentas.index', compact('suscripciones', 'conteos', 'estado', 'buscar', 'porActivar', 'mensual'));
     }
 
-    /** Quién pidió la demo de 24 horas desde la landing (leads). */
-    public function demos(Request $request)
+    /** Quién pidió la demo desde la landing (leads). */
+    public function demos(Request $request, ActividadDemos $actividad)
     {
+        // Al abrir el panel se pregunta a la demo quién entró, para no esperar
+        // a la revisión de cada 10 minutos. Si la demo no responde, se muestra
+        // lo último que se supo.
+        try {
+            $actividad->sincronizar(timeout: 4);
+        } catch (Throwable $e) {
+            Log::warning('No se pudo traer la actividad de las demos', ['error' => $e->getMessage()]);
+        }
+
         $buscar = trim((string) $request->query('q'));
         $demos = SolicitudDemo::query()
             ->when($buscar !== '', fn ($q) => $q->where(fn ($q) => $q
@@ -52,8 +62,11 @@ class CuentasController
             ->withQueryString();
         $hoy = SolicitudDemo::query()->where('created_at', '>=', now()->startOfDay())->count();
         $vigentes = SolicitudDemo::query()->where('estado', 'enviada')->where('demo_expira_at', '>', now())->count();
+        $recientes = SolicitudDemo::query()->where('estado', 'enviada')->where('created_at', '>=', now()->subDays(ActividadDemos::DIAS));
+        $enviadas = (clone $recientes)->count();
+        $entraron = (clone $recientes)->whereNotNull('primer_ingreso_at')->count();
 
-        return view('cuentas.demos', compact('demos', 'buscar', 'hoy', 'vigentes'));
+        return view('cuentas.demos', compact('demos', 'buscar', 'hoy', 'vigentes', 'enviadas', 'entraron'));
     }
 
     public function show(Suscripcion $suscripcion)

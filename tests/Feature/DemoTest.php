@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
-/** «Prueba Clinea 24 horas»: de la landing a la instancia demo y al correo del doctor. */
+/** «Prueba gratis»: de la landing a la instancia demo y al correo del doctor. */
 class DemoTest extends TestCase
 {
     use RefreshDatabase;
@@ -71,7 +71,9 @@ class DemoTest extends TestCase
         Mail::assertSent(DemoLista::class, fn (DemoLista $m) => $m->hasTo('ana@correo.com')
             && $m->hasReplyTo('hello@fstudios.dev')
             && str_contains($m->render(), 'Clave12345')
-            && str_contains($m->render(), 'https://demo.clinea.app/login'));
+            && str_contains($m->render(), 'https://demo.clinea.app/login')
+            && str_contains($m->envelope()->subject, '7 días')
+            && str_contains($m->render(), 'acceso de <b>7 días</b>'));
         Mail::assertSent(Aviso::class, fn (Aviso $m) => str_contains($m->asunto, 'nueva demo')
             && str_contains($m->render(), '+503 7000 0000'));
     }
@@ -156,6 +158,7 @@ class DemoTest extends TestCase
 
     public function test_el_panel_lista_las_demos(): void
     {
+        Http::fake(['demo.clinea.app/api/accesos-demo/actividad*' => Http::response(['demos' => []])]);
         SolicitudDemo::create(['nombre' => 'Dra. Ana López', 'especialidad' => 'Pediatría', 'email' => 'ana@correo.com', 'whatsapp' => '+503 7000 0000', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()]);
 
         $this->actingAs(User::factory()->create())->get('/cuentas/demos')
@@ -167,5 +170,46 @@ class DemoTest extends TestCase
         $this->get('/cuentas/demos')->assertOk(); // ya con sesión
         auth()->logout();
         $this->get('/cuentas/demos')->assertRedirect('/cuentas/entrar');
+    }
+
+    public function test_el_panel_dice_quien_entro_a_su_demo_y_quien_no(): void
+    {
+        $base = ['especialidad' => 'Pediatría', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()];
+        SolicitudDemo::create($base + ['nombre' => 'Dra. Ana López', 'email' => 'ana@correo.com', 'whatsapp' => '+504 9000 0000']);
+        SolicitudDemo::create($base + ['nombre' => 'Dr. Luis Paz', 'email' => 'luis@correo.com']);
+        SolicitudDemo::create(['nombre' => 'Vieja', 'especialidad' => 'Pediatría', 'email' => 'vieja@correo.com', 'estado' => 'error']);
+
+        Http::fake(['demo.clinea.app/api/accesos-demo/actividad*' => Http::response(['demos' => [
+            ['correo' => 'ana@correo.com', 'primer_ingreso_en' => '2026-10-03T08:00:00-06:00', 'ultimo_ingreso_en' => '2026-10-03T09:00:00-06:00', 'ingresos' => 3, 'expira_en' => '2026-10-10T08:00:00-06:00'],
+            ['correo' => 'luis@correo.com', 'primer_ingreso_en' => null, 'ultimo_ingreso_en' => null, 'ingresos' => 0, 'expira_en' => '2026-10-10T08:00:00-06:00'],
+        ]])]);
+
+        $this->actingAs(User::factory()->create())->get('/cuentas/demos')
+            ->assertOk()
+            ->assertSee('✓ Entró 3 veces')
+            ->assertSee('✗ No ha entrado')
+            ->assertSee('1 de 2');
+
+        // Solo se pregunta por las que sí recibieron su acceso, con el token.
+        Http::assertSent(fn ($r) => str_contains($r->url(), '/api/accesos-demo/actividad')
+            && $r->hasHeader('Authorization', 'Bearer tok-demo')
+            && str_contains(urldecode($r->url()), 'ana@correo.com')
+            && ! str_contains(urldecode($r->url()), 'vieja@correo.com'));
+
+        $ana = SolicitudDemo::where('email', 'ana@correo.com')->sole();
+        $this->assertSame(3, $ana->ingresos);
+        $this->assertTrue($ana->entro());
+        $this->assertSame('2026-10-10', $ana->demo_expira_at->toDateString());
+    }
+
+    public function test_si_la_demo_no_responde_el_panel_abre_igual(): void
+    {
+        SolicitudDemo::create(['nombre' => 'Dra. Ana López', 'especialidad' => 'Pediatría', 'email' => 'ana@correo.com', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()]);
+        Http::fake(['demo.clinea.app/*' => Http::response('caído', 500)]);
+
+        $this->actingAs(User::factory()->create())->get('/cuentas/demos')
+            ->assertOk()
+            ->assertSee('Dra. Ana López')
+            ->assertSee('✗ No ha entrado');
     }
 }

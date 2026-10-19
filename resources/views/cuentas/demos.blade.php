@@ -11,6 +11,8 @@ tr:last-child td{border-bottom:none}
 .b-enviada{background:#EAF6EE;color:#1F6B43}
 .b-error{background:#FDEDE6;color:#9A3412}
 .b-cuenta_existente{background:#FDF2E1;color:#8A5A12}
+.b-entro{background:#EAF6EE;color:#1F6B43}
+.b-no-entro{background:#FDEDE6;color:#9A3412}
 @media (max-width:760px){
   table,thead,tbody,tr,td{display:block}
   thead{display:none}
@@ -25,7 +27,7 @@ tr:last-child td{border-bottom:none}
 @include('cuentas._top')
 <main class="wrap" style="padding-bottom:48px">
   <h1>Demos</h1>
-  <p class="muted">Doctores que pidieron «Prueba Clinea 24 horas» en clinea.app. Hoy: <b>{{ $hoy }}</b> · con acceso vigente: <b>{{ $vigentes }}</b>.</p>
+  <p class="muted">Doctores que pidieron «Prueba gratis» en clinea.app. Hoy: <b>{{ $hoy }}</b> · con acceso vigente: <b>{{ $vigentes }}</b> · entraron a su demo (últimos 30 días): <b>{{ $entraron }} de {{ $enviadas }}</b>.</p>
 
   <form class="filtros" method="GET">
     <input name="q" value="{{ $buscar }}" placeholder="Buscar nombre, correo, WhatsApp o especialidad">
@@ -36,7 +38,7 @@ tr:last-child td{border-bottom:none}
     <div class="card muted">Todavía no hay solicitudes{{ $buscar ? ' con esa búsqueda' : '' }}. Cuando alguien pida la demo en clinea.app aparecerá aquí.</div>
   @else
     <table>
-      <thead><tr><th>Doctor</th><th>Especialidad</th><th>Estado</th><th>Pidió</th><th></th></tr></thead>
+      <thead><tr><th>Doctor</th><th>Especialidad</th><th>Estado</th><th>¿Entró?</th><th>Pidió</th><th></th></tr></thead>
       <tbody>
       @foreach ($demos as $d)
         <tr>
@@ -46,6 +48,17 @@ tr:last-child td{border-bottom:none}
             <span class="badge b-{{ $d->estado }}">{{ $d->etiquetaEstado() }}</span>
             @if ($d->demo_expira_at)<br><small class="muted">{{ $d->vigente() ? 'vence '.$d->demo_expira_at->diffForHumans() : 'venció '.$d->demo_expira_at->format('d/m H:i') }}</small>@endif
             @if ($d->detalle && $d->estado !== 'enviada')<br><small class="muted">{{ $d->detalle }}</small>@endif
+          </td>
+          <td>
+            @if ($d->estado !== 'enviada')
+              <span class="muted">—</span>
+            @elseif ($d->entro())
+              <span class="badge b-entro">✓ Entró {{ $d->ingresos }} {{ $d->ingresos === 1 ? 'vez' : 'veces' }}</span>
+              <br><small class="muted">última: {{ $d->ultimo_ingreso_at->diffForHumans() }}</small>
+            @else
+              <span class="badge b-no-entro">✗ No ha entrado</span>
+              @if ($d->whatsapp)<br><small class="muted">escríbele por WhatsApp</small>@endif
+            @endif
           </td>
           <td>{{ $d->created_at->format('d/m/Y H:i') }}</td>
           <td>

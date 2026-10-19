@@ -10,7 +10,7 @@
     @if ($tipo === 'enviada')
       <p style="font-size:44px;line-height:1;margin-bottom:10px" aria-hidden="true">📬</p>
       <h1 style="margin-top:0">¡Listo! Revisa tu correo</h1>
-      <p style="margin:10px 0 6px">Te enviamos tu usuario y contraseña a <b>{{ $email }}</b>. Tu acceso dura <b>{{ config('clinea.demo.horas') }} horas</b> desde ahora.</p>
+      <p style="margin:10px 0 6px">Te enviamos tu usuario y contraseña a <b>{{ $email }}</b>. Tu acceso dura <b>{{ config('clinea.demo.duracion') }}</b> desde ahora.</p>
       <p class="muted" style="margin:0 0 20px">Si no lo ves en un par de minutos, busca en «Spam» o «Promociones».</p>
       <a class="btn btn-primary" href="https://clinea.app/">Volver a clinea.app</a>
       <a class="btn" target="_blank" rel="noopener" href="{{ $wa }}" style="margin-left:8px">¿No te llegó? Escríbenos</a>

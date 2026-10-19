@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\ActividadDemos;
 use App\Services\Avisos;
 use App\Services\RevisorSuscripciones;
 use Illuminate\Support\Facades\Artisan;
@@ -32,9 +33,16 @@ Artisan::command('cuentas:usuario {email} {nombre}', function (string $email, st
     $this->info("Usuario {$email} listo para entrar a /cuentas.");
 })->purpose('Crea o actualiza un usuario del panel de cuentas');
 
+Artisan::command('cuentas:actividad-demos', function (ActividadDemos $actividad) {
+    $this->info($actividad->sincronizar().' solicitud(es) de demo actualizada(s).');
+})->purpose('Trae de demo.clinea.app si cada doctor entró a su demo y cuándo');
+
 // Cada minuto, las recién pedidas: en cuanto alguien se suscribe en Wompi le
 // llega la bienvenida, antes de que piense que pagó a un desconocido.
 Schedule::command('cuentas:revisar --recientes')->everyMinute()->withoutOverlapping();
 
 // Cada hora, todas: pagos de cada mes y atrasos.
 Schedule::command('cuentas:revisar')->hourly()->withoutOverlapping();
+
+// Cada 10 minutos: quién entró a su demo (para el panel de demos).
+Schedule::command('cuentas:actividad-demos')->everyTenMinutes()->withoutOverlapping();

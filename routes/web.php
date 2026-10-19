@@ -15,7 +15,7 @@ Route::post('/contratar', [ContratarController::class, 'store'])
     ->middleware('throttle:contratar')
     ->name('contratar');
 
-// «Prueba Clinea 24 horas» de la landing.
+// «Prueba gratis» de la landing.
 Route::get('/demo', fn () => redirect()->away('https://clinea.app/#demo'));
 Route::post('/demo', [DemoController::class, 'store'])
     ->middleware('throttle:demo')

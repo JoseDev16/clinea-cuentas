@@ -20,7 +20,7 @@
   $logo = resource_path('marca/clinea-logo.png');
   $logo = isset($message) ? $message->embed($logo) : 'data:image/png;base64,'.base64_encode(file_get_contents($logo));
 @endphp
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">Tu usuario y contraseña para probar {{ $marca }} durante {{ $horas }} horas.</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Tu usuario y contraseña para probar {{ $marca }} durante {{ $duracion }}.</div>
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F7F4EE">
 <tr><td align="center" style="padding:28px 12px 40px">
@@ -39,7 +39,7 @@
         <tr><td class="pad" style="padding:34px 40px 26px;background:#E1F1F2">
           <p style="margin:0 0 10px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#155E6B">Tu demo está lista</p>
           <h1 class="titulo" style="margin:0 0 12px;{{ $f }};font-size:29px;line-height:36px;font-weight:800;color:#23282E">¡Hola, {{ $nombre }}! Ya puedes probar {{ $marca }}.</h1>
-          <p style="margin:0;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Te preparamos un acceso de <b>{{ $horas }} horas</b> para que conozcas el sistema por tu cuenta, a tu ritmo.</p>
+          <p style="margin:0;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Te preparamos un acceso de <b>{{ $duracion }}</b> para que conozcas el sistema por tu cuenta, a tu ritmo.</p>
         </td></tr>
 
         {{-- Credenciales --}}

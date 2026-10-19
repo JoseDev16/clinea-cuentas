@@ -26,7 +26,7 @@ class Avisos
         $this->enviar('Clinea: nueva solicitud de '.$s->clinica, [['tipo' => 'solicitud', 'suscripcion' => $s]]);
     }
 
-    /** Un doctor pidió la demo de 24 horas desde la landing: es un lead. */
+    /** Un doctor pidió la demo desde la landing: es un lead. */
     public function demo(SolicitudDemo $d): void
     {
         $asunto = $d->estado === 'enviada'
