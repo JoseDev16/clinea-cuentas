@@ -212,4 +212,90 @@ class DemoTest extends TestCase
             ->assertSee('Dra. Ana López')
             ->assertSee('✗ No ha entrado');
     }
+
+    private function conDemoHonduras(): void
+    {
+        config(['clinea.demo.hn' => ['url' => 'https://demohn.clinea.app', 'token' => 'tok-hn']]);
+        Http::fake([
+            'demohn.clinea.app/api/accesos-demo' => Http::response([
+                'url' => 'https://demohn.clinea.app/login', 'correo' => 'ana@correo.com', 'password' => 'Clave12345',
+                'expira_en' => '2026-10-10T10:00:00-06:00', 'nuevo' => true,
+            ], 201),
+            'demo.clinea.app/api/accesos-demo' => Http::response([
+                'url' => 'https://demo.clinea.app/login', 'correo' => 'ana@correo.com', 'password' => 'Clave12345',
+                'expira_en' => '2026-10-10T10:00:00-06:00', 'nuevo' => true,
+            ], 201),
+        ]);
+    }
+
+    public function test_un_doctor_de_honduras_va_a_la_demo_de_honduras(): void
+    {
+        $this->conDemoHonduras();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos(['whatsapp' => '+504 9000 0000']))->assertOk();
+
+        Http::assertSent(fn ($r) => $r->url() === 'https://demohn.clinea.app/api/accesos-demo'
+            && $r->hasHeader('Authorization', 'Bearer tok-hn')
+            && $r['pais'] === 'HN');
+        Http::assertNotSent(fn ($r) => str_starts_with($r->url(), 'https://demo.clinea.app'));
+        $this->assertSame('hn', SolicitudDemo::sole()->instancia);
+        Mail::assertSent(DemoLista::class, fn (DemoLista $m) => str_contains($m->render(), 'https://demohn.clinea.app/login'));
+    }
+
+    public function test_el_salvador_y_los_demas_siguen_en_la_demo_de_siempre(): void
+    {
+        $this->conDemoHonduras();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'SV'])->post('/demo', $this->datos(['email' => 'sv@correo.com']))->assertOk();
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'GT'])->post('/demo', $this->datos(['email' => 'gt@correo.com', 'whatsapp' => '+502 5000 0000']))->assertOk();
+        // Con IP de Honduras manda el GeoIP aunque el WhatsApp sea de otro lado, y al revés.
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'SV'])->post('/demo', $this->datos(['email' => 'mix@correo.com', 'whatsapp' => '+504 9000 0000']))->assertOk();
+
+        $this->assertSame(['sv'], SolicitudDemo::pluck('instancia')->unique()->values()->all());
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'demohn'));
+    }
+
+    public function test_sin_geoip_decide_el_prefijo_del_whatsapp(): void
+    {
+        $this->conDemoHonduras();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'US'])->post('/demo', $this->datos(['whatsapp' => '+504 9000-0000']))->assertOk();
+
+        Http::assertSent(fn ($r) => $r->url() === 'https://demohn.clinea.app/api/accesos-demo' && $r['pais'] === 'HN');
+        $d = SolicitudDemo::sole();
+        $this->assertSame('hn', $d->instancia);
+        $this->assertSame('US', $d->pais); // el lead guarda de dónde vino de verdad
+    }
+
+    public function test_sin_token_de_honduras_todos_van_a_la_de_el_salvador(): void
+    {
+        $this->fakeDemo();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos(['whatsapp' => '+504 9000 0000']))->assertOk();
+
+        Http::assertSent(fn ($r) => $r->url() === 'https://demo.clinea.app/api/accesos-demo' && $r['pais'] === 'HN');
+        $this->assertSame('sv', SolicitudDemo::sole()->instancia);
+    }
+
+    public function test_la_actividad_se_pregunta_a_la_demo_donde_quedo_cada_uno(): void
+    {
+        config(['clinea.demo.hn' => ['url' => 'https://demohn.clinea.app', 'token' => 'tok-hn']]);
+        $base = ['especialidad' => 'Pediatría', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()];
+        SolicitudDemo::create($base + ['nombre' => 'Dra. Ana López', 'email' => 'ana@correo.com', 'instancia' => 'sv']);
+        SolicitudDemo::create($base + ['nombre' => 'Dr. Luis Paz', 'email' => 'luis@correo.com', 'instancia' => 'hn']);
+
+        $entro = fn ($correo) => ['correo' => $correo, 'primer_ingreso_en' => '2026-10-03T08:00:00-06:00', 'ultimo_ingreso_en' => '2026-10-03T09:00:00-06:00', 'ingresos' => 2, 'expira_en' => '2026-10-10T08:00:00-06:00'];
+        Http::fake([
+            'demo.clinea.app/api/accesos-demo/actividad*' => Http::response(['demos' => [$entro('ana@correo.com')]]),
+            'demohn.clinea.app/api/accesos-demo/actividad*' => Http::response(['demos' => [$entro('luis@correo.com')]]),
+        ]);
+
+        $this->artisan('cuentas:actividad-demos')->assertSuccessful();
+
+        Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://demohn.clinea.app/api/accesos-demo/actividad')
+            && $r->hasHeader('Authorization', 'Bearer tok-hn')
+            && str_contains(urldecode($r->url()), 'luis@correo.com')
+            && ! str_contains(urldecode($r->url()), 'ana@correo.com'));
+        $this->assertSame([2, 2], SolicitudDemo::orderBy('id')->pluck('ingresos')->all());
+    }
 }

@@ -70,6 +70,13 @@ return [
     'demo' => [
         'url' => env('CLINEA_DEMO_URL', 'https://demo.clinea.app'),
         'token' => env('CLINEA_DEMO_API_TOKEN'),
+        // Los doctores de Honduras van a su propia demo (demohn.clinea.app),
+        // configurada en lempiras, con DNI y sedes de allá. Sin token, también
+        // van a la de El Salvador.
+        'hn' => [
+            'url' => env('CLINEA_DEMO_HN_URL', 'https://demohn.clinea.app'),
+            'token' => env('CLINEA_DEMO_HN_API_TOKEN'),
+        ],
         // Cuánto dura el acceso, en palabras (lo decide User::HORAS_DEMO en el EMR).
         'duracion' => '7 días',
         // Solicitudes con el mismo correo en 24 h (cada una genera otra contraseña).

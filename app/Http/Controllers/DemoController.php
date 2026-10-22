@@ -72,17 +72,21 @@ class DemoController
             return $this->resultado('limite', 429, email: $datos['email']);
         }
 
+        $geoip = $this->pais($request);
+        $pais = $this->paisDelDoctor($geoip, $datos['whatsapp']);
+
         $d = SolicitudDemo::create([
             'nombre' => $datos['nombre'],
             'especialidad' => $datos['especialidad'],
             'email' => $datos['email'],
             'whatsapp' => $datos['whatsapp'],
-            'pais' => $this->pais($request),
+            'pais' => $geoip,
+            'instancia' => $instancia->para($pais),
             'ip' => $request->ip(),
         ]);
 
         try {
-            $acceso = $instancia->crearAcceso($d->nombre, $d->email, $d->especialidad, $d->pais);
+            $acceso = $instancia->crearAcceso($d->nombre, $d->email, $d->especialidad, $pais, $d->instancia);
         } catch (Throwable $e) {
             $existente = $e instanceof RuntimeException && $e->getMessage() === InstanciaDemo::CUENTA_EXISTENTE;
             $d->update([
@@ -116,6 +120,27 @@ class DemoController
     private function resultado(string $tipo, int $status, ?string $email = null, array $errores = [])
     {
         return response()->view('demo.resultado', compact('tipo', 'email', 'errores'), $status);
+    }
+
+    /**
+     * El país con el que se arma su demo (y a cuál demo va). Manda el GeoIP;
+     * si la IP no es de ninguno de nuestros países (VPN, viaje, sin GeoIP),
+     * decide el prefijo de su WhatsApp.
+     */
+    private function paisDelDoctor(?string $geoip, string $whatsapp): ?string
+    {
+        if (in_array($geoip, ['SV', 'HN', 'GT'], true)) {
+            return $geoip;
+        }
+
+        $digitos = preg_replace('/\D+/', '', $whatsapp);
+        foreach (['504' => 'HN', '502' => 'GT', '503' => 'SV'] as $prefijo => $pais) {
+            if (str_starts_with($digitos, $prefijo) && strlen($digitos) === 11) {
+                return $pais;
+            }
+        }
+
+        return $geoip;
     }
 
     /** Solo para saber de dónde vienen los leads (GeoIP de nginx). */
