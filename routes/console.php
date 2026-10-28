@@ -35,7 +35,7 @@ Artisan::command('cuentas:usuario {email} {nombre}', function (string $email, st
 
 Artisan::command('cuentas:actividad-demos', function (ActividadDemos $actividad) {
     $this->info($actividad->sincronizar().' solicitud(es) de demo actualizada(s).');
-})->purpose('Trae de las demos (demo y demohn) si cada doctor entró a su demo y cuándo');
+})->purpose('Trae de las demos (demo, demohn, odonto y odontohn) si cada doctor entró a su demo y cuándo');
 
 // Cada minuto, las recién pedidas: en cuanto alguien se suscribe en Wompi le
 // llega la bienvenida, antes de que piense que pagó a un desconocido.

@@ -81,7 +81,7 @@ class DemoController
             'email' => $datos['email'],
             'whatsapp' => $datos['whatsapp'],
             'pais' => $geoip,
-            'instancia' => $instancia->para($pais),
+            'instancia' => $instancia->para($pais, $datos['especialidad']),
             'ip' => $request->ip(),
         ]);
 

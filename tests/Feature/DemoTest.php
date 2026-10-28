@@ -277,6 +277,58 @@ class DemoTest extends TestCase
         $this->assertSame('sv', SolicitudDemo::sole()->instancia);
     }
 
+    private function conDemosDentales(): void
+    {
+        config([
+            'clinea.demo.hn' => ['url' => 'https://demohn.clinea.app', 'token' => 'tok-hn'],
+            'clinea.demo.odonto' => ['url' => 'https://odonto.clinea.app', 'token' => 'tok-odonto'],
+            'clinea.demo.odontohn' => ['url' => 'https://odontohn.clinea.app', 'token' => 'tok-odontohn'],
+        ]);
+        $acceso = fn ($host) => Http::response([
+            'url' => "https://{$host}/login", 'correo' => 'ana@correo.com', 'password' => 'Clave12345',
+            'expira_en' => '2026-10-10T10:00:00-06:00', 'nuevo' => true,
+        ], 201);
+        Http::fake(collect(['demo', 'demohn', 'odonto', 'odontohn'])
+            ->mapWithKeys(fn ($h) => ["{$h}.clinea.app/api/accesos-demo" => $acceso("{$h}.clinea.app")])->all());
+    }
+
+    public function test_un_odontologo_va_a_la_demo_dental_de_su_pais(): void
+    {
+        $this->conDemosDentales();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'SV'])->post('/demo', $this->datos(['especialidad' => 'Odontología', 'email' => 'sv@correo.com']))->assertOk();
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos(['especialidad' => 'Odontología', 'email' => 'hn@correo.com', 'whatsapp' => '+504 9000 0000']))->assertOk();
+        // Un médico de Honduras sigue yendo a la médica de Honduras.
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos(['email' => 'med@correo.com', 'whatsapp' => '+504 9000 0001']))->assertOk();
+
+        $this->assertSame(['odonto', 'odontohn', 'hn'], SolicitudDemo::orderBy('id')->pluck('instancia')->all());
+        Http::assertSent(fn ($r) => $r->url() === 'https://odonto.clinea.app/api/accesos-demo' && $r->hasHeader('Authorization', 'Bearer tok-odonto') && $r['especialidad'] === 'Odontología');
+        Http::assertSent(fn ($r) => $r->url() === 'https://odontohn.clinea.app/api/accesos-demo' && $r->hasHeader('Authorization', 'Bearer tok-odontohn') && $r['pais'] === 'HN');
+        Mail::assertSent(DemoLista::class, fn (DemoLista $m) => str_contains($m->render(), 'https://odontohn.clinea.app/login'));
+
+        $this->actingAs(User::factory()->create())->get('/cuentas/demos')->assertSee('en odontohn.clinea.app')->assertSee('en odonto.clinea.app');
+    }
+
+    public function test_sin_demo_dental_el_odontologo_va_a_la_medica(): void
+    {
+        $this->conDemoHonduras();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos(['especialidad' => 'Odontología', 'whatsapp' => '+504 9000 0000']))->assertOk();
+
+        $this->assertSame('hn', SolicitudDemo::sole()->instancia);
+    }
+
+    public function test_sin_la_dental_de_honduras_va_a_la_dental_de_el_salvador(): void
+    {
+        $this->conDemosDentales();
+        config(['clinea.demo.odontohn.token' => null]);
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/demo', $this->datos(['especialidad' => 'Odontología', 'whatsapp' => '+504 9000 0000']))->assertOk();
+
+        $this->assertSame('odonto', SolicitudDemo::sole()->instancia);
+        Http::assertSent(fn ($r) => $r->url() === 'https://odonto.clinea.app/api/accesos-demo' && $r['pais'] === 'HN');
+    }
+
     public function test_la_actividad_se_pregunta_a_la_demo_donde_quedo_cada_uno(): void
     {
         config(['clinea.demo.hn' => ['url' => 'https://demohn.clinea.app', 'token' => 'tok-hn']]);

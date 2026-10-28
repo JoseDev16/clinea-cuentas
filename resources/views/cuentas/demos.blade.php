@@ -46,7 +46,7 @@ tr:last-child td{border-bottom:none}
           <td>{{ $d->especialidad }}</td>
           <td>
             <span class="badge b-{{ $d->estado }}">{{ $d->etiquetaEstado() }}</span>
-            @if ($d->instancia === 'hn')<br><small class="muted">en demohn.clinea.app</small>@endif
+            @if ($d->instancia !== 'sv')<br><small class="muted">en {{ app(\App\Services\InstanciaDemo::class)->dominio($d->instancia) }}</small>@endif
             @if ($d->demo_expira_at)<br><small class="muted">{{ $d->vigente() ? 'vence '.$d->demo_expira_at->diffForHumans() : 'venció '.$d->demo_expira_at->format('d/m H:i') }}</small>@endif
             @if ($d->detalle && $d->estado !== 'enviada')<br><small class="muted">{{ $d->detalle }}</small>@endif
           </td>
