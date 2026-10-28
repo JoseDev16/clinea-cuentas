@@ -329,6 +329,48 @@ class DemoTest extends TestCase
         Http::assertSent(fn ($r) => $r->url() === 'https://odonto.clinea.app/api/accesos-demo' && $r['pais'] === 'HN');
     }
 
+    public function test_la_demo_dental_lleva_la_guia_y_no_promete_el_recorrido(): void
+    {
+        $this->conDemosDentales();
+
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'SV'])->post('/demo', $this->datos(['especialidad' => 'Odontología']))->assertOk();
+
+        Mail::assertSent(DemoLista::class, function (DemoLista $m) {
+            $html = $m->render();
+
+            return $m->esDental() && count($m->attachments()) === 1
+                && str_contains($html, 'cuatro pacientes de ejemplo')
+                && ! str_contains($html, 'recorrido');
+        });
+    }
+
+    public function test_reenvia_la_demo_dental_a_los_odontologos_que_tenian_la_medica(): void
+    {
+        $this->conDemosDentales();
+        $base = ['especialidad' => 'Odontología', 'estado' => 'enviada', 'demo_expira_at' => now()->addDay()];
+        SolicitudDemo::create($base + ['nombre' => 'Rosa Ruiz', 'email' => 'rosa@correo.com', 'whatsapp' => '+504 9834 8750', 'pais' => 'HN', 'instancia' => 'sv']);
+        SolicitudDemo::create($base + ['nombre' => 'Rosa Ruiz', 'email' => 'rosa@correo.com', 'whatsapp' => '+504 9834 8750', 'pais' => 'HN', 'instancia' => 'sv']);
+        SolicitudDemo::create($base + ['nombre' => 'Dr. Luis Paz', 'email' => 'luis@correo.com', 'whatsapp' => '+503 7000 0000', 'pais' => 'SV', 'instancia' => 'sv']);
+        SolicitudDemo::create(['especialidad' => 'Pediatría'] + $base + ['nombre' => 'Dra. Ana', 'email' => 'ana@correo.com', 'instancia' => 'sv']);
+
+        // Sin --enviar no toca nada.
+        $this->artisan('cuentas:demo-dental')->assertSuccessful();
+        Mail::assertNothingSent();
+        $this->assertSame(4, SolicitudDemo::count());
+
+        $this->artisan('cuentas:demo-dental', ['--enviar' => true])->assertSuccessful();
+
+        // Una por correo, a la demo dental de su país, y la de pediatría no.
+        $this->assertSame(['odontohn', 'odonto'], SolicitudDemo::where('id', '>', 4)->orderBy('id')->pluck('instancia')->sort()->reverse()->values()->all());
+        Mail::assertSentCount(2);
+        Mail::assertSent(DemoLista::class, fn (DemoLista $m) => $m->reenvio && $m->hasTo('rosa@correo.com')
+            && str_contains($m->render(), 'ya tiene odontograma') && str_contains($m->render(), 'https://odontohn.clinea.app/login'));
+
+        // Repetirlo no les vuelve a escribir.
+        $this->artisan('cuentas:demo-dental', ['--enviar' => true])->assertSuccessful();
+        Mail::assertSentCount(2);
+    }
+
     public function test_la_actividad_se_pregunta_a_la_demo_donde_quedo_cada_uno(): void
     {
         config(['clinea.demo.hn' => ['url' => 'https://demohn.clinea.app', 'token' => 'tok-hn']]);

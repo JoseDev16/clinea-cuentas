@@ -37,9 +37,19 @@
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr><td style="height:6px;line-height:6px;font-size:0;background:#1F7A8C">&nbsp;</td></tr>
         <tr><td class="pad" style="padding:34px 40px 26px;background:#E1F1F2">
+          @if ($reenvio)
+          <p style="margin:0 0 10px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#155E6B">Nueva versión para odontólogos</p>
+          <h1 class="titulo" style="margin:0 0 12px;{{ $f }};font-size:29px;line-height:36px;font-weight:800;color:#23282E">¡Hola, {{ $nombre }}! {{ $marca }} ya tiene odontograma.</h1>
+          <p style="margin:0;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Hace unos días te enviamos una demo de {{ $marca }}. Ahora preparamos una versión especial para odontólogos: incluye el <b>odontograma</b>, presupuestos que salen solos de lo que marcas en la boca y tratamientos con <b>prima y cuotas</b>. Te creamos un acceso nuevo de <b>{{ $duracion }}</b> y te adjuntamos una guía en PDF que lo explica con ejemplos.</p>
+          @elseif ($dental)
+          <p style="margin:0 0 10px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#155E6B">Tu demo está lista</p>
+          <h1 class="titulo" style="margin:0 0 12px;{{ $f }};font-size:29px;line-height:36px;font-weight:800;color:#23282E">¡Hola, {{ $nombre }}! Ya puedes probar {{ $marca }} para odontólogos.</h1>
+          <p style="margin:0;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Te preparamos un acceso de <b>{{ $duracion }}</b> con odontograma, presupuestos y tratamientos por cuotas. Te adjuntamos una guía en PDF que lo explica con ejemplos.</p>
+          @else
           <p style="margin:0 0 10px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#155E6B">Tu demo está lista</p>
           <h1 class="titulo" style="margin:0 0 12px;{{ $f }};font-size:29px;line-height:36px;font-weight:800;color:#23282E">¡Hola, {{ $nombre }}! Ya puedes probar {{ $marca }}.</h1>
           <p style="margin:0;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Te preparamos un acceso de <b>{{ $duracion }}</b> para que conozcas el sistema por tu cuenta, a tu ritmo.</p>
+          @endif
         </td></tr>
 
         {{-- Credenciales --}}
@@ -63,7 +73,12 @@
         {{-- Consejos --}}
         <tr><td class="pad" style="padding:28px 40px 4px">
           <p style="margin:0 0 14px;{{ $f }};font-size:18px;font-weight:800;color:#23282E">Para aprovecharla</p>
-          @foreach ([
+          @foreach ($dental ? [
+            ['Ya tienes cuatro pacientes de ejemplo', 'Una rehabilitación por cuotas, una ortodoncia, un niño con dentición mixta y un presupuesto por aceptar: ábrelos y mira el odontograma y los tratamientos en acción.'],
+            ['La guía adjunta te lo explica', 'Cómo se marca la boca, cómo sale el presupuesto, cómo se cobran las cuotas. Son 12 páginas con capturas reales.'],
+            ['Úsala como en tu clínica', 'Entras como odontólogo: crea pacientes, marca odontogramas, arma presupuestos y prueba todo lo que quieras.'],
+            ['Solo datos de prueba', 'Es una clínica de demostración que comparten otros odontólogos: no escribas datos reales de tus pacientes.'],
+          ] : [
             ['Te guiamos paso a paso', 'Al entrar se abre un recorrido que te enseña a agendar, atender una consulta, hacer la receta en PDF y cobrar, haciéndolo de verdad.'],
             ['Úsala como en tu consultorio', 'Entras como doctor: crea pacientes, atiende consultas y prueba todo lo que quieras.'],
             ['Solo datos de prueba', 'Es una clínica de demostración que comparten otros doctores: no escribas datos reales de tus pacientes.'],

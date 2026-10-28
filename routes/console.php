@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\InstanciaDemo;
+use App\Services\ReenvioDemoDental;
 use App\Models\User;
 use App\Services\ActividadDemos;
 use App\Services\Avisos;
@@ -46,3 +48,32 @@ Schedule::command('cuentas:revisar')->hourly()->withoutOverlapping();
 
 // Cada 10 minutos: quién entró a su demo (para el panel de demos).
 Schedule::command('cuentas:actividad-demos')->everyTenMinutes()->withoutOverlapping();
+
+Artisan::command('cuentas:demo-dental {ids?* : Solicitudes (por defecto, todas las de Odontología)} {--enviar : Crear los accesos y mandar los correos; sin esto solo muestra a quién}', function (ReenvioDemoDental $reenvio) {
+    $candidatas = $reenvio->candidatas(array_map('intval', $this->argument('ids')));
+    if ($candidatas->isEmpty()) {
+        $this->info('No hay odontólogos pendientes de la demo dental.');
+
+        return;
+    }
+
+    $this->table(['#', 'Nombre', 'Correo', 'WhatsApp', 'Irá a'], $candidatas->map(fn ($s) => [
+        $s->id, $s->nombre, $s->email, $s->whatsapp,
+        app(InstanciaDemo::class)->dominio(app(InstanciaDemo::class)->para($reenvio->paisDe($s), InstanciaDemo::ODONTOLOGIA)),
+    ])->all());
+
+    if (! $this->option('enviar')) {
+        $this->warn('Simulación: no se creó ni se envió nada. Repite con --enviar.');
+
+        return;
+    }
+
+    foreach ($candidatas as $s) {
+        try {
+            $nueva = $reenvio->enviar($s);
+            $this->line("✓ {$s->email} → solicitud #{$nueva->id} en {$nueva->instancia}");
+        } catch (\Throwable $e) {
+            $this->error("✗ {$s->email}: ".$e->getMessage());
+        }
+    }
+})->purpose('Manda la demo dental (con la guía en PDF) a los odontólogos que pidieron la demo médica');
