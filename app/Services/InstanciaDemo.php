@@ -9,16 +9,18 @@ use RuntimeException;
 
 /**
  * Pide a una instancia demo de Clinea un acceso de demostración (7 días).
- * Hay cuatro: «sv» (demo.clinea.app, la de siempre), «hn» (demohn.clinea.app,
- * configurada para Honduras) y sus gemelas dentales «odonto»
- * (odonto.clinea.app) y «odontohn» (odontohn.clinea.app), con odontograma y
- * tratamientos. Del otro lado: App\Http\Controllers\Api\AccesoDemoController del EMR.
+ * Una médica por país —«sv» (demo.clinea.app, la de siempre), «hn»
+ * (demohn) y «gt» (demogt)— y sus gemelas dentales «odonto», «odontohn» y
+ * «odontogt», con odontograma y tratamientos. Del otro lado: App\Http\Controllers\Api\AccesoDemoController del EMR.
  */
 class InstanciaDemo
 {
     public const CUENTA_EXISTENTE = 'cuenta_existente';
 
-    public const INSTANCIAS = ['sv', 'hn', 'odonto', 'odontohn'];
+    public const INSTANCIAS = ['sv', 'hn', 'gt', 'odonto', 'odontohn', 'odontogt'];
+
+    /** La demo médica de cada país (El Salvador es la de siempre: «sv»). */
+    private const POR_PAIS = ['HN' => 'hn', 'GT' => 'gt'];
 
     /** La especialidad del formulario que va a las demos dentales. */
     public const ODONTOLOGIA = 'Odontología';
@@ -36,18 +38,19 @@ class InstanciaDemo
      */
     public function para(?string $pais, ?string $especialidad = null): string
     {
-        $hn = strtoupper((string) $pais) === 'HN';
+        $medica = self::POR_PAIS[strtoupper((string) $pais)] ?? 'sv';
 
         if ($especialidad === self::ODONTOLOGIA) {
-            if ($hn && $this->configurada('odontohn')) {
-                return 'odontohn';
-            }
-            if ($this->configurada('odonto')) {
-                return 'odonto';
+            // odonto (SV), odontohn, odontogt.
+            $dental = 'odonto'.($medica === 'sv' ? '' : $medica);
+            foreach ([$dental, 'odonto'] as $instancia) {
+                if ($this->configurada($instancia)) {
+                    return $instancia;
+                }
             }
         }
 
-        return $hn && $this->configurada('hn') ? 'hn' : 'sv';
+        return $this->configurada($medica) ? $medica : 'sv';
     }
 
     /** Dónde vive cada demo, para el panel («demohn.clinea.app»). */
@@ -127,7 +130,7 @@ class InstanciaDemo
     /** @return array{url: ?string, token: ?string} */
     private function config(string $instancia): array
     {
-        return in_array($instancia, ['hn', 'odonto', 'odontohn'], true)
+        return $instancia !== 'sv' && in_array($instancia, self::INSTANCIAS, true)
             ? config("clinea.demo.{$instancia}")
             : ['url' => config('clinea.demo.url'), 'token' => config('clinea.demo.token')];
     }

@@ -371,6 +371,25 @@ class DemoTest extends TestCase
         Mail::assertSentCount(2);
     }
 
+    public function test_guatemala_tiene_sus_demos(): void
+    {
+        config([
+            'clinea.demo.gt' => ['url' => 'https://demogt.clinea.app', 'token' => 'tok-gt'],
+            'clinea.demo.odonto' => ['url' => 'https://odonto.clinea.app', 'token' => 'tok-odonto'],
+            'clinea.demo.odontogt' => ['url' => 'https://odontogt.clinea.app', 'token' => 'tok-odontogt'],
+        ]);
+        $acceso = fn ($host) => Http::response(['url' => "https://{$host}/login", 'correo' => 'x@correo.com', 'password' => 'Clave12345', 'expira_en' => '2026-10-10T10:00:00-06:00', 'nuevo' => true], 201);
+        Http::fake(collect(['demo', 'demogt', 'odonto', 'odontogt'])->mapWithKeys(fn ($h) => ["{$h}.clinea.app/api/accesos-demo" => $acceso("{$h}.clinea.app")])->all());
+
+        // Por IP de Guatemala, y sin GeoIP por el +502 del WhatsApp.
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'GT'])->post('/demo', $this->datos(['email' => 'a@correo.com', 'whatsapp' => '+502 5515 2456']))->assertOk();
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'US'])->post('/demo', $this->datos(['email' => 'b@correo.com', 'whatsapp' => '+502 5515 2456']))->assertOk();
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'GT'])->post('/demo', $this->datos(['email' => 'c@correo.com', 'especialidad' => 'Odontología', 'whatsapp' => '+502 5515 2456']))->assertOk();
+
+        $this->assertSame(['gt', 'gt', 'odontogt'], SolicitudDemo::orderBy('id')->pluck('instancia')->all());
+        Http::assertSent(fn ($r) => $r->url() === 'https://demogt.clinea.app/api/accesos-demo' && $r->hasHeader('Authorization', 'Bearer tok-gt') && $r['pais'] === 'GT');
+    }
+
     public function test_la_actividad_se_pregunta_a_la_demo_donde_quedo_cada_uno(): void
     {
         config(['clinea.demo.hn' => ['url' => 'https://demohn.clinea.app', 'token' => 'tok-hn']]);

@@ -77,6 +77,10 @@ return [
             'url' => env('CLINEA_DEMO_HN_URL', 'https://demohn.clinea.app'),
             'token' => env('CLINEA_DEMO_HN_API_TOKEN'),
         ],
+        'gt' => [
+            'url' => env('CLINEA_DEMO_GT_URL', 'https://demogt.clinea.app'),
+            'token' => env('CLINEA_DEMO_GT_API_TOKEN'),
+        ],
         // Odontólogos: demos dentales (odontograma, tratamientos por cuotas),
         // una por país. Sin token, van a la médica de su país.
         'odonto' => [
@@ -86,6 +90,10 @@ return [
         'odontohn' => [
             'url' => env('CLINEA_DEMO_ODONTOHN_URL', 'https://odontohn.clinea.app'),
             'token' => env('CLINEA_DEMO_ODONTOHN_API_TOKEN'),
+        ],
+        'odontogt' => [
+            'url' => env('CLINEA_DEMO_ODONTOGT_URL', 'https://odontogt.clinea.app'),
+            'token' => env('CLINEA_DEMO_ODONTOGT_API_TOKEN'),
         ],
         // Cuánto dura el acceso, en palabras (lo decide User::HORAS_DEMO en el EMR).
         'duracion' => '7 días',
