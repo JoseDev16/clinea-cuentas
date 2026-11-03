@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Los formularios de la landing (Contratar y Prueba gratis) vienen de
         // una página estática, que no tiene token CSRF; se protegen con chequeo
         // de Origin, campo trampa y límites (ver FormularioPublico).
-        $middleware->validateCsrfTokens(except: ['contratar', 'demo']);
+        $middleware->validateCsrfTokens(except: ['contratar', 'demo', 'cuentas/wompi/webhook']);
         $middleware->redirectUsersTo(fn () => route('cuentas.index'));
         $middleware->web(append: [\App\Http\Middleware\CabecerasSeguridad::class]);
     })

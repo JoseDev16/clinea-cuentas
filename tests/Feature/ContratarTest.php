@@ -133,14 +133,16 @@ class ContratarTest extends TestCase
         $this->assertSame('14.00', Suscripcion::sole()->monto);
     }
 
-    public function test_honduras_usa_su_precio(): void
+    public function test_honduras_va_a_su_enlace_fijo_de_pago_unico(): void
     {
         $this->fakeWompi();
 
-        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/contratar', $this->datos(['plan' => 'expediente']));
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'HN'])->post('/contratar', $this->datos(['plan' => 'expediente']))
+            ->assertRedirect('https://s.wompi.sv/2434832wB7');
 
-        $this->assertSame('HN', Suscripcion::sole()->pais);
-        $this->assertSame('8.00', Suscripcion::sole()->monto);
+        $s = Suscripcion::sole();
+        $this->assertSame(['HN', 'unico', '13.00', null], [$s->pais, $s->tipo, $s->monto, $s->wompi_enlace_id]);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'EnlacePagoRecurrente'));
     }
 
     public function test_datos_invalidos_muestran_la_pagina_de_error_sin_crear_nada(): void
@@ -292,14 +294,14 @@ class ContratarTest extends TestCase
         $this->assertCount(1, $adjuntos);
     }
 
-    public function test_guatemala_usa_su_precio(): void
+    public function test_guatemala_va_a_su_enlace_fijo_de_pago_unico(): void
     {
         $this->fakeWompi();
 
-        $this->withServerVariables(['GEOIP_COUNTRY' => 'GT'])->post('/contratar', $this->datos(['plan' => 'whatsapp']));
+        $this->withServerVariables(['GEOIP_COUNTRY' => 'GT'])->post('/contratar', $this->datos(['plan' => 'whatsapp']))
+            ->assertRedirect('https://s.wompi.sv/2434848-iz');
 
-        $this->assertSame('GT', Suscripcion::sole()->pais);
-        $this->assertSame('13.00', Suscripcion::sole()->monto);
+        $this->assertSame(['GT', 'unico', '13.00'], [Suscripcion::sole()->pais, Suscripcion::sole()->tipo, Suscripcion::sole()->monto]);
         $this->assertSame('Guatemala', Suscripcion::sole()->nombrePais());
     }
 

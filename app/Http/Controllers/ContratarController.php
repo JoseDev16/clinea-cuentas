@@ -67,6 +67,11 @@ class ContratarController
         }
         $datos = $v->validated();
 
+        // Honduras y Guatemala: un enlace fijo de Wompi por país (un solo pago de un mes).
+        if ($paisUnico = $this->paisPagoUnico($request, $datos)) {
+            return $this->pagoUnico($request, $datos, $paisUnico, $avisos);
+        }
+
         // Si vuelve a tocar «Contratar» (o recarga), se le manda al enlace que
         // ya tiene en vez de crear otro en Wompi.
         $previa = Suscripcion::query()
@@ -149,6 +154,59 @@ class ContratarController
         ]);
     }
 
+
+    /**
+     * Honduras o Guatemala solo si la IP es de allá (GeoIP de nginx): el país
+     * de la página se ignora, para que nadie con VPN elija otro precio.
+     */
+    private function paisPagoUnico(Request $request, array $datos): ?string
+    {
+        $ip = strtoupper((string) $request->server('GEOIP_COUNTRY'));
+
+        return array_key_exists($ip, config('clinea.pago_unico')) ? $ip : null;
+    }
+
+    private function pagoUnico(Request $request, array $datos, string $pais, Avisos $avisos)
+    {
+        $enlace = config("clinea.pago_unico.{$pais}");
+        if (! $this->esEnlaceDeWompi($enlace['url'])) {
+            Log::error("El enlace de pago de {$pais} no es de wompi.sv", ['url' => $enlace['url']]);
+
+            return response()->view('contratar.error', [], 502);
+        }
+
+        // Si vuelve a tocar «Contratar», no se duplica la ficha.
+        $previa = Suscripcion::query()
+            ->where('tipo', 'unico')->where('pais', $pais)
+            ->where('email', $datos['email'])->where('estado', 'pendiente')
+            ->where('created_at', '>=', now()->subDay())
+            ->exists();
+        if ($previa) {
+            return redirect()->away($enlace['url']);
+        }
+        if (Suscripcion::query()->where('email', $datos['email'])->where('created_at', '>=', now()->subDay())->count() >= 3) {
+            return response()->view('contratar.error', ['errores' => [
+                'Ya recibimos varias solicitudes con este correo hoy. Escríbenos por WhatsApp y te ayudamos a terminar.',
+            ]], 429);
+        }
+
+        $s = Suscripcion::create([
+            'pais' => $pais,
+            'plan' => 'whatsapp',
+            'tipo' => 'unico',
+            'monto' => $enlace['monto'],
+            'dia_cobro' => min(now()->day, config('clinea.dia_cobro_maximo')),
+            'nombre_contacto' => $datos['nombre'],
+            'clinica' => $datos['clinica'],
+            'email' => $datos['email'],
+            'whatsapp' => $datos['whatsapp'],
+            'wompi_url' => $enlace['url'],
+            'ip' => $request->ip(),
+        ]);
+        $avisos->solicitudUnica($s);
+
+        return redirect()->away($enlace['url']);
+    }
 
     private function esEnlaceDeWompi(?string $url): bool
     {

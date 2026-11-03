@@ -69,6 +69,36 @@ class Wompi
         return array_values($todas);
     }
 
+    /**
+     * Un enlace de pago (único, no recurrente) con sus transacciones:
+     * monto, cantidadPagosExitosos, transacciones[] (idTransaccion, monto,
+     * esReal, esAprobada, fechaTransaccion), configuracion...
+     */
+    public function enlacePago(string $enlaceId): array
+    {
+        return $this->api()->get('/EnlacePago/'.rawurlencode($enlaceId))->throw()->json() ?? [];
+    }
+
+    /** PUT /EnlacePago/{id}: Wompi pide el objeto completo (no hace merge). */
+    public function actualizarEnlacePago(string $enlaceId, array $datos): array
+    {
+        return $this->api()->put('/EnlacePago/'.rawurlencode($enlaceId), $datos)->throw()->json() ?? [];
+    }
+
+    /**
+     * El webhook trae en la cabecera wompi_hash el HMAC-SHA256 (hex) del body
+     * crudo, firmado con el API Secret del aplicativo.
+     */
+    public function firmaValida(string $body, ?string $hash): bool
+    {
+        $secreto = (string) config('services.wompi.api_secret');
+        if ($secreto === '' || ! $hash) {
+            return false;
+        }
+
+        return hash_equals(hash_hmac('sha256', $body, $secreto), strtolower(trim($hash)));
+    }
+
     public function desactivarEnlace(string $enlaceId): void
     {
         $this->api()->post('/EnlacePagoRecurrente/'.rawurlencode($enlaceId))->throw();

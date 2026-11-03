@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\ActividadDemos;
 use App\Services\Avisos;
 use App\Services\RevisorSuscripciones;
+use App\Services\PagosUnicos;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
@@ -45,6 +46,17 @@ Schedule::command('cuentas:revisar --recientes')->everyMinute()->withoutOverlapp
 
 // Cada hora, todas: pagos de cada mes y atrasos.
 Schedule::command('cuentas:revisar')->hourly()->withoutOverlapping();
+
+Artisan::command('cuentas:pagos-unicos', function (PagosUnicos $pagos) {
+    $nuevos = $pagos->revisar();
+    foreach ($nuevos as $p) {
+        $this->line("{$p->pais} US\${$p->monto} {$p->id_transaccion} → suscripción #{$p->suscripcion_id}");
+    }
+    $this->info(count($nuevos).' pago(s) nuevo(s).');
+})->purpose('Respaldo del webhook: busca en Wompi pagos de los enlaces de Honduras y Guatemala que no se hayan registrado');
+
+// Cada 5 minutos, por si el webhook de Wompi no llegó.
+Schedule::command('cuentas:pagos-unicos')->everyFiveMinutes()->withoutOverlapping();
 
 // Cada 10 minutos: quién entró a su demo (para el panel de demos).
 Schedule::command('cuentas:actividad-demos')->everyTenMinutes()->withoutOverlapping();

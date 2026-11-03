@@ -30,6 +30,32 @@ return [
         ],
     ],
 
+    /*
+     * Honduras y Guatemala: «Contratar» manda a un enlace FIJO de Wompi (creado
+     * en el panel de Wompi), de un solo pago por un mes. El pago se detecta por
+     * el webhook (/cuentas/wompi/webhook) y, de respaldo, preguntándole a Wompi
+     * cada 5 minutos por las transacciones del enlace. El Salvador sigue por
+     * WhatsApp. El enlace_id es el idEnlace de Wompi (no el código del link corto).
+     */
+    'pago_unico' => [
+        'HN' => [
+            'enlace_id' => env('CLINEA_HN_ENLACE_ID', '4598413'),
+            'url' => env('CLINEA_HN_ENLACE_URL', 'https://s.wompi.sv/2434832wB7'),
+            'monto' => 13.00,
+            'anunciado' => 'L370',
+        ],
+        'GT' => [
+            'enlace_id' => env('CLINEA_GT_ENLACE_ID', '4598430'),
+            'url' => env('CLINEA_GT_ENLACE_URL', 'https://s.wompi.sv/2434848-iz'),
+            'monto' => 13.00,
+            'anunciado' => 'Q105',
+        ],
+    ],
+
+    // La revisión de respaldo deja pasar estos minutos antes de tomar un pago
+    // como suyo: así el webhook, que trae el correo del cliente, llega primero.
+    'minutos_espera_webhook' => (int) env('CLINEA_MINUTOS_ESPERA_WEBHOOK', 3),
+
     'paises' => [
         'SV' => 'El Salvador',
         'HN' => 'Honduras',
@@ -44,6 +70,9 @@ return [
 
     // A quién avisar de contrataciones, pagos y atrasos (separados por coma).
     'avisos_a' => array_filter(array_map('trim', explode(',', (string) env('CLINEA_AVISOS_A', 'hello@fstudios.dev')))),
+
+    // Además, quién recibe el aviso de cada PAGO de Honduras / Guatemala.
+    'avisos_pago_a' => array_filter(array_map('trim', explode(',', (string) env('CLINEA_AVISOS_PAGO_A', 'josefbarillas@gmail.com')))),
 
     // Días de margen después del día de cobro antes de marcar una suscripción como atrasada.
     'dias_gracia' => (int) env('CLINEA_DIAS_GRACIA', 3),

@@ -4,6 +4,7 @@ use App\Http\Controllers\ContratarController;
 use App\Http\Controllers\CuentasController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\SesionController;
+use App\Http\Controllers\WompiWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // En producción nginx solo manda a Laravel /contratar y /cuentas; lo demás
@@ -20,6 +21,12 @@ Route::get('/demo', fn () => redirect()->away('https://clinea.app/#demo'));
 Route::post('/demo', [DemoController::class, 'store'])
     ->middleware('throttle:demo')
     ->name('demo');
+
+// Wompi avisa aquí de cada pago de los enlaces de Honduras y Guatemala (va
+// bajo /cuentas porque nginx solo manda a Laravel /contratar, /demo y /cuentas).
+Route::post('/cuentas/wompi/webhook', WompiWebhookController::class)
+    ->middleware('throttle:60,1')
+    ->name('wompi.webhook');
 
 Route::prefix('cuentas')->group(function () {
     Route::middleware('guest')->group(function () {

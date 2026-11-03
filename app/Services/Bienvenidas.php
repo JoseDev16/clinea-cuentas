@@ -56,7 +56,10 @@ class Bienvenidas
         $promesa = $s->instanciaPrometidaPara() ?? now()->addHours(config('clinea.horas_instancia'));
         $usd = '$'.number_format((float) $s->monto, 2);
         // Honduras y Guatemala: precio anunciado en su moneda, cobro en dólares.
-        $anunciado = config("clinea.planes.{$s->pais}.{$s->plan}.anunciado");
+        $unico = $s->tipo === 'unico';
+        $anunciado = $unico
+            ? config("clinea.pago_unico.{$s->pais}.anunciado")
+            : config("clinea.planes.{$s->pais}.{$s->plan}.anunciado");
         $whatsapp = (string) config('clinea.whatsapp_soporte');
 
         return [
@@ -68,11 +71,18 @@ class Bienvenidas
             'notaMoneda' => $anunciado
                 ? "Nunca pagarás más de {$anunciado} al mes. Se cobra en dólares (US{$usd}) y tu banco lo convierte a ".config("clinea.monedas_locales.{$s->pais}", 'tu moneda').": por la conversión podrías pagar un poco menos, pero nunca más de lo anunciado."
                 : null,
+            // Honduras / Guatemala pagan un mes con un enlace de pago único.
+            'unico' => $unico,
+            'recibimos' => $unico ? 'tu pago' : 'tu suscripción',
+            'tituloResumen' => $unico ? 'Tu contratación' : 'Tu suscripción',
+            'cobro' => $unico
+                ? ($anunciado ? "{$anunciado} por 1 mes (pagado: US{$usd})" : "{$usd} por 1 mes")
+                : null,
             'horas' => config('clinea.horas_instancia'),
             'promesaHora' => $promesa->locale('es')->isoFormat('h:mm a'),
             'promesaDia' => $promesa->isSameDay(now()) ? 'hoy' : $promesa->locale('es')->isoFormat('dddd D [de] MMMM'),
             'fecha' => now()->locale('es')->isoFormat('D [de] MMMM [de] YYYY'),
-            'whatsappUrl' => 'https://wa.me/'.$whatsapp.'?text='.rawurlencode("Hola, soy {$s->nombre_contacto} de {$s->clinica}. Acabo de suscribirme a Clinea."),
+            'whatsappUrl' => 'https://wa.me/'.$whatsapp.'?text='.rawurlencode("Hola, soy {$s->nombre_contacto} de {$s->clinica}. ".($unico ? 'Acabo de pagar mi mes de Clinea.' : 'Acabo de suscribirme a Clinea.')),
             'whatsappVisible' => self::telefonoVisible($whatsapp),
             'correo' => config('clinea.correo_soporte'),
             'direccion' => config('clinea.direccion_fstudios'),

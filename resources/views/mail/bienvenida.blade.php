@@ -22,7 +22,7 @@
   $logo = isset($message) ? $message->embed($logo) : 'data:image/png;base64,'.base64_encode(file_get_contents($logo));
 @endphp
 {{-- Texto de vista previa en la bandeja de entrada --}}
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">Recibimos tu suscripción. Antes de las {{ $promesaHora }} tendrás el enlace para entrar a {{ $marca }} y un técnico te escribirá por WhatsApp.</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">Recibimos {{ $recibimos }}. Antes de las {{ $promesaHora }} tendrás el enlace para entrar a {{ $marca }} y un técnico te escribirá por WhatsApp.</div>
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F7F4EE">
 <tr><td align="center" style="padding:28px 12px 40px">
@@ -46,7 +46,7 @@
         <tr><td class="pad" style="padding:34px 40px 8px;background:#E1F1F2">
           <p style="margin:0 0 10px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#155E6B">Suscripción recibida</p>
           <h1 class="titulo" style="margin:0 0 12px;{{ $f }};font-size:29px;line-height:36px;font-weight:800;color:#23282E">¡Hola, {{ $nombre }}! Te damos la bienvenida a {{ $marca }}.</h1>
-          <p style="margin:0 0 28px;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Recibimos tu suscripción para <b>{{ $s->clinica }}</b> y nuestro equipo ya está preparando tu sistema. Gracias por confiar en nosotros.</p>
+          <p style="margin:0 0 28px;{{ $f }};font-size:16px;line-height:25px;color:#3A434C">Recibimos {{ $recibimos }} para <b>{{ $s->clinica }}</b> y nuestro equipo ya está preparando tu sistema. Gracias por confiar en nosotros.</p>
         </td></tr>
       </table>
 
@@ -77,7 +77,7 @@
         {{-- Resumen de la suscripción --}}
         <tr><td class="pad" style="padding:8px 40px 4px">
           <table role="presentation" class="resumen" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F7F4EE;border-radius:14px">
-            <tr><td style="padding:18px 20px 4px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5C6670" colspan="2">Tu suscripción</td></tr>
+            <tr><td style="padding:18px 20px 4px;{{ $f }};font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5C6670" colspan="2">{{ $tituloResumen }}</td></tr>
             <tr>
               <td style="padding:6px 20px;{{ $f }};font-size:15px;color:#5C6670" width="40%">Clínica</td>
               <td style="padding:6px 20px;{{ $f }};font-size:15px;font-weight:700;color:#23282E">{{ $s->clinica }}</td>
@@ -88,13 +88,13 @@
             </tr>
             <tr>
               <td style="padding:6px 20px 18px;{{ $f }};font-size:15px;color:#5C6670">Cobro</td>
-              <td style="padding:6px 20px 18px;{{ $f }};font-size:15px;font-weight:700;color:#23282E">{{ $monto }} al mes, el día {{ $s->dia_cobro }}</td>
+              <td style="padding:6px 20px 18px;{{ $f }};font-size:15px;font-weight:700;color:#23282E">@if ($unico){{ $cobro }}@else{{ $monto }} al mes, el día {{ $s->dia_cobro }}@endif</td>
             </tr>
           </table>
-          @if ($notaMoneda)
+          @if ($notaMoneda && ! $unico)
           <p style="margin:12px 2px 0;{{ $f }};font-size:14px;line-height:21px;font-weight:700;color:#155E6B">{{ $notaMoneda }}</p>
           @endif
-          <p style="margin:12px 2px 0;{{ $f }};font-size:13px;line-height:20px;color:#5C6670">En tu estado de cuenta el cobro aparece a nombre del representante legal de {{ $marca }}, que es quien administra los pagos. Puedes cancelar cuando quieras escribiéndonos.</p>
+          <p style="margin:12px 2px 0;{{ $f }};font-size:13px;line-height:20px;color:#5C6670">En tu estado de cuenta el cobro aparece a nombre del representante legal de {{ $marca }}, que es quien administra los pagos. @if ($unico)Es un pago de un mes: no se te cobrará nada más de forma automática; antes de que termine te escribimos para renovar.@else Puedes cancelar cuando quieras escribiéndonos.@endif</p>
         </td></tr>
 
         {{-- Soporte --}}

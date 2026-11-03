@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\Aviso;
+use App\Models\PagoWompi;
 use App\Models\SolicitudDemo;
 use App\Models\Suscripcion;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +25,38 @@ class Avisos
     public function solicitud(Suscripcion $s): void
     {
         $this->enviar('Clinea: nueva solicitud de '.$s->clinica, [['tipo' => 'solicitud', 'suscripcion' => $s]]);
+    }
+
+    /** Contratar en Honduras / Guatemala: llenó el formulario y fue al enlace de Wompi. */
+    public function solicitudUnica(Suscripcion $s): void
+    {
+        $this->mandar('Clinea: '.$s->clinica.' fue a pagar ('.$s->nombrePais().')', [[
+            'titulo' => 'Fue a pagar el mes en Wompi: '.$s->clinica,
+            'lineas' => [
+                $s->nombre_contacto.' · '.$s->email.' · '.$s->whatsapp,
+                config("clinea.pago_unico.{$s->pais}.anunciado").' (US$'.number_format((float) $s->monto, 2).') · 1 mes · '.$s->nombrePais(),
+                'Todavía no ha pagado: te llega otro correo en cuanto Wompi confirme el pago.',
+            ],
+            'url' => url('/cuentas/'.$s->id),
+        ]]);
+    }
+
+    /** Pago confirmado en un enlace de pago único (Honduras / Guatemala). */
+    public function pagoUnico(PagoWompi $p): void
+    {
+        $s = $p->suscripcion;
+        $this->mandar('Clinea: ¡PAGO RECIBIDO! '.$s->clinica.' ('.$s->nombrePais().') — US$'.number_format((float) $p->monto, 2), [[
+            'titulo' => 'Pagó 1 mes de Clinea: '.$s->clinica,
+            'lineas' => array_values(array_filter([
+                'Monto: US$'.number_format((float) $p->monto, 2).' ('.config("clinea.pago_unico.{$s->pais}.anunciado").') · '.$s->nombrePais().' · '.$p->pagado_at?->format('d/m/Y H:i'),
+                'Contacto: '.$s->nombre_contacto.' · '.($s->email ?: 'sin correo').($s->whatsapp ? ' · WhatsApp '.$s->whatsapp : ''),
+                $p->cliente_nombre || $p->cliente_email ? 'Datos en Wompi: '.trim(($p->cliente_nombre ?? '').' '.($p->cliente_email ?? '')) : null,
+                $p->coincidio_por_correo ? null : 'OJO: no coincidió por correo con el formulario; confirma que es la misma persona.',
+                $s->email ? 'Ya se le envió la bienvenida con los pasos a seguir. Preparar su instancia.' : 'No hay correo del cliente: contactarlo por WhatsApp.',
+                'Transacción Wompi '.$p->id_transaccion.' (detectado por '.($p->origen === 'webhook' ? 'webhook' : 'revisión').').',
+            ])),
+            'url' => url('/cuentas/'.$s->id),
+        ]], array_values(array_unique([...config('clinea.avisos_a'), ...config('clinea.avisos_pago_a')])));
     }
 
     /** Un doctor pidió la demo desde la landing: es un lead. */
@@ -79,10 +112,10 @@ class Avisos
         $this->mandar($asunto, $bloques);
     }
 
-    private function mandar(string $asunto, array $bloques): void
+    private function mandar(string $asunto, array $bloques, ?array $a = null): void
     {
         try {
-            Mail::to(config('clinea.avisos_a'))->send(new Aviso($asunto, $bloques));
+            Mail::to($a ?? config('clinea.avisos_a'))->send(new Aviso($asunto, $bloques));
         } catch (Throwable $e) {
             // Que un correo caído no tumbe la contratación ni la revisión.
             Log::error('No se pudo enviar el aviso: '.$asunto, ['error' => $e->getMessage()]);
