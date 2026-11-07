@@ -64,7 +64,7 @@ class InstanciaDemo
      *
      * @throws RuntimeException con el mensaje CUENTA_EXISTENTE si el correo es de una cuenta real
      */
-    public function crearAcceso(string $nombre, string $correo, string $especialidad, ?string $pais = null, string $instancia = 'sv'): array
+    public function crearAcceso(string $nombre, string $correo, string $especialidad, ?string $pais = null, string $instancia = 'sv', ?string $telefono = null): array
     {
         if (! $this->configurada($instancia)) {
             throw new RuntimeException("Falta el token de la demo «{$instancia}» en el .env");
@@ -79,6 +79,8 @@ class InstanciaDemo
                     'especialidad' => $especialidad,
                     // El membrete de muestra lleva una dirección de ese país.
                     'pais' => $pais,
+                    // Tere le ofrece enviarle ahí el recordatorio de prueba.
+                    'telefono' => $telefono,
                 ])
                 ->throw()
                 ->json();

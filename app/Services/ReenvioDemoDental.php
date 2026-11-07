@@ -68,7 +68,7 @@ class ReenvioDemoDental
             'detalle' => "Reenvío de la demo dental (antes en la solicitud #{$original->id}).",
         ]);
 
-        $acceso = $this->instancia->crearAcceso($nueva->nombre, $nueva->email, $nueva->especialidad, $pais, $nueva->instancia);
+        $acceso = $this->instancia->crearAcceso($nueva->nombre, $nueva->email, $nueva->especialidad, $pais, $nueva->instancia, $nueva->whatsapp);
         Mail::to($nueva->email, $nueva->nombre)->send(new DemoLista($nueva, $acceso, reenvio: true));
         $nueva->update(['estado' => 'enviada', 'demo_expira_at' => Carbon::parse($acceso['expira_en'])]);
 
