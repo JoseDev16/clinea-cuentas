@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentesController;
 use App\Http\Controllers\ContratarController;
 use App\Http\Controllers\CuentasController;
 use App\Http\Controllers\DemoController;
@@ -27,6 +28,11 @@ Route::post('/demo', [DemoController::class, 'store'])
 Route::post('/cuentas/wompi/webhook', WompiWebhookController::class)
     ->middleware('throttle:60,1')
     ->name('wompi.webhook');
+
+// FSTUDIOS Agentes pregunta qué se sabe de un teléfono (demos y si es cliente).
+Route::get('/cuentas/api/contacto', [AgentesController::class, 'contacto'])
+    ->middleware('throttle:60,1')
+    ->name('agentes.contacto');
 
 Route::prefix('cuentas')->group(function () {
     Route::middleware('guest')->group(function () {

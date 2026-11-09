@@ -120,6 +120,19 @@ class InstanciaDemo
         return collect($r)->keyBy(fn ($d) => mb_strtolower($d['correo']))->all();
     }
 
+    /** Lo que el doctor hizo en su demo, en orden (perfil + eventos). */
+    public function historial(string $correo, string $instancia = 'sv', int $timeout = 8): ?array
+    {
+        if (! $this->configurada($instancia)) {
+            return null;
+        }
+
+        $r = $this->cliente($instancia)->timeout($timeout)
+            ->get('/api/accesos-demo/historial', ['correo' => $correo]);
+
+        return $r->status() === 404 ? null : $r->throw()->json();
+    }
+
     private function cliente(string $instancia): PendingRequest
     {
         $c = $this->config($instancia);

@@ -94,6 +94,9 @@ return [
     // minuto para detectar la suscripción casi al instante.
     'horas_vigilancia' => (int) env('CLINEA_HORAS_VIGILANCIA', 48),
 
+    // Token con el que FSTUDIOS Agentes consulta /cuentas/api/contacto.
+    'agentes_token' => env('AGENTES_API_TOKEN'),
+
     // «Prueba gratis»: la landing pide la demo y aquí se crea el
     // acceso en la instancia demo (POST {url}/api/accesos-demo con el token).
     'demo' => [
