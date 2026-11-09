@@ -33,6 +33,9 @@ Route::post('/cuentas/wompi/webhook', WompiWebhookController::class)
 Route::get('/cuentas/api/contacto', [AgentesController::class, 'contacto'])
     ->middleware('throttle:60,1')
     ->name('agentes.contacto');
+Route::post('/cuentas/api/demo', [AgentesController::class, 'crearDemo'])
+    ->middleware('throttle:20,1')
+    ->name('agentes.demo');
 
 Route::prefix('cuentas')->group(function () {
     Route::middleware('guest')->group(function () {
