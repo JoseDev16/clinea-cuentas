@@ -62,6 +62,23 @@ class AgentesDemoTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_reenviar_genera_contrasena_nueva_de_la_demo_vigente_del_telefono(): void
+    {
+        SolicitudDemo::create(['nombre' => 'Ana', 'especialidad' => 'Pediatría', 'email' => 'ana@correo.com', 'pais' => 'SV',
+            'estado' => 'enviada', 'whatsapp' => '78845819', 'instancia' => 'sv', 'demo_expira_at' => now()->addHours(5)]);
+        Http::fake(['demo.clinea.app/api/accesos-demo' => Http::response([
+            'url' => 'https://demo.clinea.app/entrar', 'correo' => 'ana@correo.com', 'password' => 'Nueva999', 'expira_en' => now()->addDays(7)->toIso8601String(), 'nuevo' => false,
+        ])]);
+
+        $r = $this->withToken('tok-agentes')->postJson('/cuentas/api/demo', ['reenviar' => true, 'telefono' => '+503 7884 5819'])->assertOk();
+
+        $this->assertSame('reenviada', $r->json('resultado'));
+        $this->assertSame('Nueva999', $r->json('contrasena'));
+        Http::assertSent(fn ($req) => $req['correo'] === 'ana@correo.com');
+
+        $this->withToken('tok-agentes')->postJson('/cuentas/api/demo', ['reenviar' => true, 'telefono' => '70001111'])->assertNotFound();
+    }
+
     public function test_correo_de_cuenta_real(): void
     {
         Http::fake(['demo.clinea.app/*' => Http::response(['message' => 'existe'], 409)]);

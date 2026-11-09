@@ -89,6 +89,32 @@ class AgentesController extends Controller
     {
         $this->autorizar($request);
 
+        // «No encuentro el correo / no puedo entrar»: se le genera una contraseña
+        // nueva a la demo vigente de ESTE teléfono y se la damos en el chat.
+        if ($request->boolean('reenviar')) {
+            $tel = preg_replace('/\D+/', '', (string) $request->validate(['telefono' => ['required', 'string', 'max:30']])['telefono']);
+            $vigente = $this->vigenteDe($tel);
+            if (! $vigente) {
+                return response()->json(['resultado' => 'sin_demo', 'mensaje' => 'Este número no tiene una demo vigente. Ofrézcale crear una (nombre, especialidad y correo).'], 404);
+            }
+            try {
+                $acceso = $instancia->crearAcceso($vigente->nombre, $vigente->email, $vigente->especialidad, $vigente->pais, $vigente->instancia ?? 'sv', $vigente->whatsapp);
+            } catch (Throwable $e) {
+                Log::error("No se pudo reenviar la demo (agente) {$vigente->id}", ['error' => $e->getMessage()]);
+
+                return response()->json(['resultado' => 'fallo', 'mensaje' => 'No se pudo generar el acceso ahora. Páselo con una persona.'], 502);
+            }
+            $vigente->update(['demo_expira_at' => Carbon::parse($acceso['expira_en'])]);
+
+            return response()->json([
+                'resultado' => 'reenviada',
+                'enlace' => $acceso['url'],
+                'usuario' => $acceso['correo'],
+                'contrasena' => $acceso['password'],
+                'vence' => $acceso['expira_en'],
+            ]);
+        }
+
         $request->merge([
             'nombre' => FormularioPublico::limpiar($request->input('nombre')),
             'correo' => mb_strtolower(FormularioPublico::limpiar($request->input('correo'))),
@@ -102,13 +128,11 @@ class AgentesController extends Controller
         $digitos = preg_replace('/\D+/', '', $datos['telefono']);
         $especialidad = self::especialidad($datos['especialidad']);
 
-        $vigente = SolicitudDemo::query()->where('estado', 'enviada')->where('demo_expira_at', '>', now())
-            ->whereNotNull('whatsapp')->latest('id')->limit(2000)->get()
-            ->first(fn (SolicitudDemo $s) => self::mismoTelefono($s->whatsapp, $digitos));
+        $vigente = $this->vigenteDe($digitos);
         if ($vigente) {
             return response()->json([
                 'resultado' => 'ya_tiene_demo',
-                'mensaje' => 'Este número ya tiene una demo vigente; no se creó otra. Sus datos de acceso están en su correo.',
+                'mensaje' => 'Este número ya tiene una demo vigente; no se creó otra. Sus datos llegaron a su correo; si no los encuentra o no puede entrar, se le puede generar una contraseña nueva aquí (reenviar).',
                 'correo' => $vigente->email,
                 'demo' => 'https://'.$instancia->dominio($vigente->instancia ?? 'sv'),
                 'vence' => $vigente->demo_expira_at?->toIso8601String(),
@@ -165,6 +189,13 @@ class AgentesController extends Controller
             'vence' => $acceso['expira_en'],
             'especialidad' => $especialidad,
         ], 201);
+    }
+
+    private function vigenteDe(string $digitos): ?SolicitudDemo
+    {
+        return SolicitudDemo::query()->where('estado', 'enviada')->where('demo_expira_at', '>', now())
+            ->whereNotNull('whatsapp')->latest('id')->limit(2000)->get()
+            ->first(fn (SolicitudDemo $s) => self::mismoTelefono($s->whatsapp, $digitos));
     }
 
     private function autorizar(Request $request): void
